@@ -1,0 +1,80 @@
+<h2>答错时的体验设计</h2>
+<p class="subtitle">调研发现：答错不应该惩罚，而应该是"另一个学习机会"。关键是不让孩子产生挫败感。</p>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">答错时的故事呈现方式对比</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px; line-height: 1.8;">
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #fef2f2; border-radius: 12px; border: 2px solid #fecaca;">
+        <div style="font-weight: 700; color: #ef4444; margin-bottom: 8px;">A. 当前系统：Wrong Path 补充说明</div>
+        <div style="color: #374151; font-style: italic; margin-bottom: 8px;">
+          "答错了？没关系！让我换个角度帮你理解——<br>
+          3×4 其实就是 3 个 4 相加……（解释文字）"
+        </div>
+        <div style="font-size: 12px; color: #6b7280;">
+          问题：答错后变成"老师讲解"，打断了故事节奏，孩子没有继续看下去的动力
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #eff6ff; border-radius: 12px; border: 2px solid #bfdbfe;">
+        <div style="font-weight: 700; color: #3b82f6; margin-bottom: 8px;">B. 分支叙事：答错走另一条路（推荐）</div>
+        <div style="color: #374151; font-style: italic; margin-bottom: 8px;">
+          "小明算错了密码，大门没有打开。<br>
+          '哎呀！' 一个声音从旁边传来。<br>
+          是一只会说话的猫头鹰：<br>
+          '年轻人，你算错啦。4+4+4 才等于 12 哦。<br>
+          不过没关系——我从后面的小门带你进去吧。'<br>
+          小明跟着猫头鹰穿过一条秘密通道……"
+        </div>
+        <div style="font-size: 12px; color: #6b7280;">
+          答错 = 遇到新角色 / 走隐藏路线 / 看到不同的剧情。错也有"奖励"
+        </div>
+      </div>
+
+      <div style="padding: 16px; background: #f0fdf4; border-radius: 12px; border: 2px solid #bbf7d0;">
+        <div style="font-weight: 700; color: #22c55e; margin-bottom: 8px;">C. 勇气机制：答错不扣分，答对加倍</div>
+        <div style="color: #374151; font-style: italic; margin-bottom: 8px;">
+          "小明算错了，但没关系！<br>
+          师父说过：'每一次错误都是通往正确的阶梯。'<br>
+          系统提示：+'探索值' 5分（答错也有奖励！）<br>
+          现在，小明可以从头再试一次，<br>
+          或者先听听猫头鹰的提示再作答。"
+        </div>
+        <div style="font-size: 12px; color: #6b7280;">
+          答错 = 获得"探索值" + 提示机会 + 重新尝试。鼓励大胆尝试
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>A. 分支叙事：答错走另一条路</h3>
+      <p>答错后剧情走向不同的分支，遇到新角色、走隐藏路线。错误本身变成故事内容。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #3b82f6;">沉浸感强 · AI 生成需设计分支 Prompt</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>B. 勇气机制 + 二次机会（推荐）</h3>
+      <p>答错获得"探索值"（不扣分），可以看提示后重试。两次都错才进入分支剧情。兼顾学习效果和体验。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #059669;">最佳平衡 · 鼓励尝试 + 保证学习效果</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>C. A + B 结合</h3>
+      <p>第一次答错 → 勇气机制（探索值+提示+重试）；第二次答错 → 分支叙事（走另一条路）。最完整的体验。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #ef4444;">效果最好 · 但每题需生成两种分支</div>
+    </div>
+  </div>
+</div>

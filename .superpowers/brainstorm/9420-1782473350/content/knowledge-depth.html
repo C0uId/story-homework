@@ -1,0 +1,70 @@
+<h2>知识嵌入深度：知识在故事中的角色？</h2>
+<p class="subtitle">调研核心结论：知识必须是"通关的唯一手段"，而不是"故事中的附加题"。</p>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">3 种知识嵌入模型对比</div>
+    <div class="mockup-body" style="padding: 20px;">
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #fef2f2; border-radius: 12px; border: 2px solid #fecaca;">
+        <div style="font-weight: 700; color: #ef4444; margin-bottom: 8px;">A. 纯关卡模型（当前系统改良版）</div>
+        <div style="font-size: 13px; color: #374151; line-height: 1.7;">
+          <div style="margin-bottom: 6px;"><strong>结构：</strong>每幕 = 场景描述(短) → 知识关卡(答题) → 结果(继续/分支)</div>
+          <div style="margin-bottom: 6px;"><strong>知识角色：</strong>知识 = 门锁密码 / 武器弹药 / 机关解法</div>
+          <div style="margin-bottom: 6px;"><strong>叙事占比：</strong>30% 叙事 + 70% 互动</div>
+          <div style="margin-bottom: 6px;"><strong>优点：</strong>学习密度高，每幕都有知识练习</div>
+          <div><strong>缺点：</strong>节奏紧凑但缺少"呼吸感"，孩子可能觉得一直在做题</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #eff6ff; border-radius: 12px; border: 2px solid #bfdbfe;">
+        <div style="font-weight: 700; color: #3b82f6; margin-bottom: 8px;">B. 故事优先模型（推荐）</div>
+        <div style="font-size: 13px; color: #374151; line-height: 1.7;">
+          <div style="margin-bottom: 6px;"><strong>结构：</strong>交替排列 — 纯故事幕 → 知识关卡幕 → 纯故事幕 → 知识关卡幕</div>
+          <div style="margin-bottom: 6px;"><strong>知识角色：</strong>知识 = 推动剧情的"钥匙"，出现在关键转折点</div>
+          <div style="margin-bottom: 6px;"><strong>叙事占比：</strong>50% 叙事 + 50% 互动</div>
+          <div style="margin-bottom: 6px;"><strong>优点：</strong>有"追剧感"，孩子为了看剧情继续而主动答题</div>
+          <div><strong>缺点：</strong>单集知识密度略低，但长期留存更好</div>
+        </div>
+      </div>
+
+      <div style="padding: 16px; background: #f0fdf4; border-radius: 12px; border: 2px solid #bbf7d0;">
+        <div style="font-weight: 700; color: #22c55e; margin-bottom: 8px;">C. 分支叙事模型</div>
+        <div style="font-size: 13px; color: #374151; line-height: 1.7;">
+          <div style="margin-bottom: 6px;"><strong>结构：</strong>每幕都有 2-3 个选择分支，选择决定剧情走向和知识点</div>
+          <div style="margin-bottom: 6px;"><strong>知识角色：</strong>不同选择路径对应不同知识点，答错走"纠正支线"</div>
+          <div style="margin-bottom: 6px;"><strong>叙事占比：</strong>60% 叙事 + 40% 互动</div>
+          <div style="margin-bottom: 6px;"><strong>优点：</strong>沉浸感最强，选择真正有后果</div>
+          <div><strong>缺点：</strong>AI 生成复杂度最高，分支一致性难保证</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>A. 纯关卡模型</h3>
+      <p>高密度练习，每幕必答题。适合想快速提分的场景。</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>B. 故事优先模型（推荐）</h3>
+      <p>故事和关卡交替，有"追剧感"。知识出现在关键转折点。</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>C. 分支叙事模型</h3>
+      <p>选择驱动剧情，不同路径学不同知识。沉浸感最强但复杂度最高。</p>
+    </div>
+  </div>
+</div>

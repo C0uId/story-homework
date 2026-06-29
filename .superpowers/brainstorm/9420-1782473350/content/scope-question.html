@@ -1,0 +1,70 @@
+<h2>范围确认：第一版应该包含哪些？</h2>
+<p class="subtitle">方向 C 包含很多子系统。我们需要决定第一版的边界，避免一次做太多导致质量下降。</p>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">方向 C 的所有子系统</div>
+    <div class="mockup-body" style="padding: 20px;">
+      <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 2px solid #e5e7eb;">
+            <th style="text-align: left; padding: 8px;">子系统</th>
+            <th style="text-align: left; padding: 8px;">内容</th>
+            <th style="text-align: left; padding: 8px;">核心度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid #f3f4f6;">
+            <td style="padding: 8px; font-weight: 600;">① 故事引擎</td>
+            <td style="padding: 8px; color: #6b7280;">重写 Prompt、叙事结构、分支叙事</td>
+            <td style="padding: 8px; color: #ef4444; font-weight: 600;">★★★★★</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f3f4f6;">
+            <td style="padding: 8px; font-weight: 600;">② 交互重构</td>
+            <td style="padding: 8px; color: #6b7280;">简化首页、冒险地图、动效反馈</td>
+            <td style="padding: 8px; color: #f59e0b; font-weight: 600;">★★★★</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #f3f4f6;">
+            <td style="padding: 8px; font-weight: 600;">③ 学习画像</td>
+            <td style="padding: 8px; color: #6b7280;">答题数据分析、自适应难度调整</td>
+            <td style="padding: 8px; color: #3b82f6; font-weight: 600;">★★★</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; font-weight: 600;">④ 社交系统</td>
+            <td style="padding: 8px; color: #6b7280;">班级排行、好友对战、分享</td>
+            <td style="padding: 8px; color: #22c55e; font-weight: 600;">★★</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>①② 优先：故事 + 交互</h3>
+      <p>先把核心体验做到极致：故事好听 + 玩起来爽。学习画像和社交后续迭代。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #059669;">推荐 · 首版聚焦体验</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>①②③ 全包：故事 + 交互 + 学习画像</h3>
+      <p>三个一起做，包含自适应难度。社交功能留给 v2。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #f59e0b;">中等工作量 · 体验 + 智能</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>①②③④ 全部：四个系统一起做</h3>
+      <p>一步到位，包含社交排行。最大工作量但功能最完整。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #ef4444;">风险高 · 建议分阶段</div>
+    </div>
+  </div>
+</div>

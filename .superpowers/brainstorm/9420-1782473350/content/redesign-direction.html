@@ -1,0 +1,87 @@
+<h2>知识剧场 - 重设计方案方向</h2>
+<p class="subtitle">基于调研结果，我识别出现有系统的 3 个核心问题和 3 个重构方向。请选择你最认可的方向。</p>
+
+<div style="margin-bottom: 32px;">
+  <h3 style="margin-bottom: 16px; color: #ef4444;">现有系统的 3 个核心问题</h3>
+
+  <div class="mockup">
+    <div class="mockup-header">问题诊断</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px; line-height: 1.8;">
+      <div style="margin-bottom: 16px; padding: 12px 16px; background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0;">
+        <strong>1. 叙事太"教科书"</strong><br>
+        现有故事 narrative 要求 50-100 字且大量使用"你能帮帮我吗？"等固定句式。<br>
+        <span style="color: #6b7280;">→ 缺乏幽默感、情感张力和角色个性</span>
+      </div>
+      <div style="margin-bottom: 16px; padding: 12px 16px; background: #fef2f2; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
+        <strong>2. 知识点是"附加题"而非"故事引擎"</strong><br>
+        问答和故事是分离的：先讲故事 → 然后出题。<br>
+        <span style="color: #6b7280;">→ 应该是"知识是通关的唯一手段"</span>
+      </div>
+      <div style="padding: 12px 16px; background: #fef2f2; border-left: 4px solid #8b5cf6; border-radius: 0 8px 8px 0;">
+        <strong>3. 选择路径不够"有后果"</strong><br>
+        Wrong Path 是补充说明，不是真正的分支叙事。<br>
+        <span style="color: #6b7280;">→ 应该让选择真正改变故事走向</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div>
+  <h3 style="margin-bottom: 16px;">选择重构方向</h3>
+
+  <div class="options">
+    <div class="option" data-choice="a" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>🎯 方向一：故事引擎重构（推荐）</h3>
+        <p><strong>核心：</strong>重写 AI Prompt 系统 + 故事结构设计</p>
+        <ul style="font-size: 13px; color: #6b7280; margin-top: 8px; padding-left: 20px;">
+          <li>重写 system prompt → 用"知识即武器"原则</li>
+          <li>新增 3 种叙事风格（幽默吐槽 / 悬疑解密 / 成长热血）</li>
+          <li>重设 episode 结构：冲突 → 知识关卡 → 解决 → 新冲突</li>
+          <li>分支叙事真正由选择驱动</li>
+          <li>不改 UI，只改内容生成层</li>
+        </ul>
+        <div style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-radius: 8px; font-size: 12px; color: #059669;">
+          工作量：中等 · 效果：高 · 不破坏现有 UI
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="b" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>🎨 方向二：交互体验重构</h3>
+        <p><strong>核心：</strong>重做 UI 交互 + 增加游戏化机制</p>
+        <ul style="font-size: 13px; color: #6b7280; margin-top: 8px; padding-left: 20px;">
+          <li>首页从 4 步选择 → 一键"开始冒险"（自动匹配）</li>
+          <li>新增"冒险地图"替代线性章节列表</li>
+          <li>增加倒计时挑战、连击奖励等游戏化元素</li>
+          <li>答对/答错的动画和音效反馈</li>
+          <li>不改 AI 生成，只改前端交互</li>
+        </ul>
+        <div style="margin-top: 12px; padding: 8px 12px; background: #fffbeb; border-radius: 8px; font-size: 12px; color: #d97706;">
+          工作量：高 · 效果：中高 · 大量 UI 改动
+        </div>
+      </div>
+    </div>
+
+    <div class="option" data-choice="c" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>🚀 方向三：全面重构（故事 + 交互 + 系统）</h3>
+        <p><strong>核心：</strong>整合方向 A + B，同时新增学习分析系统</p>
+        <ul style="font-size: 13px; color: #6b7280; margin-top: 8px; padding-left: 20px;">
+          <li>包含方向 A 的所有故事引擎改进</li>
+          <li>包含方向 B 的部分交互改进</li>
+          <li>新增"学习画像"：根据答题数据自动调整难度</li>
+          <li>新增"班级排行"等社交功能</li>
+          <li>最大改动量，可能需要 3-4 轮迭代</li>
+        </ul>
+        <div style="margin-top: 12px; padding: 8px 12px; background: #fef3c7; border-radius: 8px; font-size: 12px; color: #b45309;">
+          工作量：最高 · 效果：最高 · 建议分阶段实施
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

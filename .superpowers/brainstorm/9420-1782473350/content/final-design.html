@@ -1,0 +1,137 @@
+<h2>知识剧场 v2 - 完整设计方案</h2>
+<p class="subtitle">基于所有决策汇总，以下是完整的重设计方案。请审阅。</p>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">设计决策汇总</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 8px; font-weight: 700; width: 140px;">重构方向</td>
+          <td style="padding: 10px 8px;">方向 C：全面重构（故事 + 交互 + 系统）</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 8px; font-weight: 700;">首版范围</td>
+          <td style="padding: 10px 8px;">① 故事引擎 + ② 交互重构（学习画像和社交留 v2）</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 8px; font-weight: 700;">叙事风格</td>
+          <td style="padding: 10px 8px;">幽默吐槽风为默认，设置中可切换悬疑/热血</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 10px 8px; font-weight: 700;">知识嵌入</td>
+          <td style="padding: 10px 8px;">故事优先模型：纯故事幕 ⇄ 知识关卡幕交替</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; font-weight: 700;">答错机制</td>
+          <td style="padding: 10px 8px;">勇气机制 + 二次机会 + 分支叙事兜底</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">模块一：故事引擎重构（Prompt + 结构）</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px; line-height: 1.8;">
+      <div style="margin-bottom: 16px;">
+        <h4 style="color: #ef4444; margin-bottom: 8px;">1.1 新的 System Prompt 核心原则</h4>
+        <ul style="padding-left: 20px; color: #374151;">
+          <li><strong>幽默优先：</strong>每幕至少一个笑点（吐槽、反转、拟人）</li>
+          <li><strong>角色个性：</strong>主角有鲜明性格（好奇、爱吐槽、偶尔犯傻）</li>
+          <li><strong>知识即钥匙：</strong>知识点是剧情推进的必要条件</li>
+          <li><strong>章节悬念：</strong>每章结尾必须有 cliffhanger</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <h4 style="color: #3b82f6; margin-bottom: 8px;">1.2 新的 Episode 结构</h4>
+        <div style="padding: 12px 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <code style="font-size: 13px; line-height: 2;">
+            章节 = [纯故事幕A] → [知识关卡幕B] → [纯故事幕A] → [知识关卡幕B] → ...<br><br>
+            纯故事幕：150-250字，推进剧情、发展角色、埋伏笔<br>
+            知识关卡幕：80-120字铺垫 + 知识关卡 + 答对/答错分支
+          </code>
+        </div>
+      </div>
+      <div>
+        <h4 style="color: #22c55e; margin-bottom: 8px;">1.3 三种叙事风格 Prompt 模板</h4>
+        <ul style="padding-left: 20px; color: #374151;">
+          <li><strong>幽默吐槽：</strong>大量对话、拟声词、角色吐槽、反转笑点</li>
+          <li><strong>悬疑解密：</strong>线索链、推理过程、真相揭示</li>
+          <li><strong>成长热血：</strong>挑战→失败→坚持→突破，情感驱动</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">模块二：交互重构（UI + 体验）</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px; line-height: 1.8;">
+      <div style="margin-bottom: 16px;">
+        <h4 style="color: #ef4444; margin-bottom: 8px;">2.1 首页简化</h4>
+        <ul style="padding-left: 20px; color: #374151;">
+          <li>4步选择 → 2步（年级 → 学科），主题自动匹配</li>
+          <li>新增"继续冒险"按钮（一键回到上次进度）</li>
+          <li>新增每日推荐（基于学习数据推荐今天该学什么）</li>
+        </ul>
+      </div>
+      <div style="margin-bottom: 16px;">
+        <h4 style="color: #3b82f6; margin-bottom: 8px;">2.2 答题交互升级</h4>
+        <ul style="padding-left: 20px; color: #374151;">
+          <li>答对：✨ 粒子特效 + "太棒了！" + 探索值+10</li>
+          <li>答错：💪 鼓励动效 + "再试试！" + 探索值+5 + 提示按钮</li>
+          <li>连击奖励：连续答对3题触发"连击模式"（答对经验翻倍）</li>
+          <li>倒计时可选（家长设置中开启/关闭）</li>
+        </ul>
+      </div>
+      <div>
+        <h4 style="color: #22c55e; margin-bottom: 8px;">2.3 角色系统微调</h4>
+        <ul style="padding-left: 20px; color: #374151;">
+          <li>"境界"改名为更直观的"等级"（Lv.1-12）</li>
+          <li>新增"探索值"概念（替代部分经验值，答错也有奖励）</li>
+          <li>保留天赋、技能、性格探测系统</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">需修改的文件清单</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 13px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="padding: 12px; background: #fef2f2; border-radius: 8px;">
+          <div style="font-weight: 700; color: #ef4444; margin-bottom: 4px;">核心改动</div>
+          <ul style="padding-left: 16px; margin: 0; color: #374151;">
+            <li>storyGenerator.js — 重写 Prompt</li>
+            <li>aiPromptTemplates.js — 新增风格模板</li>
+            <li>HomePage.vue — 简化首页流程</li>
+            <li>StoryPlayPage.vue — 新交互 + 答错机制</li>
+          </ul>
+        </div>
+        <div style="padding: 12px; background: #eff6ff; border-radius: 8px;">
+          <div style="font-weight: 700; color: #3b82f6; margin-bottom: 4px;">辅助改动</div>
+          <ul style="padding-left: 16px; margin: 0; color: #374151;">
+            <li>themes.js — 新增风格配置</li>
+            <li>characterSystem.js — 新增探索值</li>
+            <li>learningProgress.js — 适配新结构</li>
+            <li>App.vue — 导航微调</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="padding: 16px; background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-radius: 12px; border: 2px solid #bbf7d0; text-align: center;">
+  <div style="font-size: 18px; font-weight: 700; color: #059669; margin-bottom: 8px;">
+    这是最终设计方案
+  </div>
+  <div style="font-size: 14px; color: #374151;">
+    确认无误后，我将编写详细的 Spec 文档并开始实施
+  </div>
+</div>

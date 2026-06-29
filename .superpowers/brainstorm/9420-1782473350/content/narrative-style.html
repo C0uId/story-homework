@@ -1,0 +1,77 @@
+<h2>叙事风格：故事应该是什么"味道"？</h2>
+<p class="subtitle">调研显示 52% 的8-12岁孩子希望"书能让我笑"，幽默是第一驱动力。但我们也要考虑不同孩子的偏好。</p>
+
+<div style="margin-bottom: 24px;">
+  <div class="mockup">
+    <div class="mockup-header">案例对比：同一个数学题（3×4=?）在不同风格下的故事呈现</div>
+    <div class="mockup-body" style="padding: 20px; font-size: 14px; line-height: 1.8;">
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #fef2f2; border-radius: 12px; border: 2px solid #fecaca;">
+        <div style="font-weight: 700; color: #ef4444; margin-bottom: 8px;">A. 幽默吐槽风（推荐主线）</div>
+        <div style="color: #374151; font-style: italic;">
+          "小明推开实验室的门，一股臭鸡蛋味扑面而来。<br>
+          '这是谁的袜子？' 小明捂住鼻子。<br>
+          实验台上的烧杯突然说话了：<br>
+          '哼，我可是珍贵的硫化氢！要解救我，先回答——<br>
+          <strong>如果每排放 4 个烧杯，共 3 排，需要多少个烧杯？</strong>'<br>
+          小明：'……你一个烧杯还会出数学题？'<br>
+          烧杯：'不会出题的烧杯不是好实验器材。'"
+        </div>
+      </div>
+
+      <div style="margin-bottom: 20px; padding: 16px; background: #eff6ff; border-radius: 12px; border: 2px solid #bfdbfe;">
+        <div style="font-weight: 700; color: #3b82f6; margin-bottom: 8px;">B. 悬疑解密风</div>
+        <div style="color: #374151; font-style: italic;">
+          "小明打开信封，里面是一串密码。<br>
+          密码锁上刻着一行字：<br>
+          '每排4个，共3排，总数即为钥匙。'<br>
+          小明的笔在纸上飞速计算。<br>
+          <strong>3 × 4 = ?</strong><br>
+          这个数字，将打开通往下一关的大门。"
+        </div>
+      </div>
+
+      <div style="padding: 16px; background: #f0fdf4; border-radius: 12px; border: 2px solid #bbf7d0;">
+        <div style="font-weight: 700; color: #22c55e; margin-bottom: 8px;">C. 成长热血风</div>
+        <div style="color: #374151; font-style: italic;">
+          "小明站在考场门口，手心全是汗。<br>
+          上次考试他只考了60分，被同学笑了一周。<br>
+          但这次不同——他已经偷偷练了一个月。<br>
+          第一题：每排4个座位，共3排，共多少个？<br>
+          <strong>小明深吸一口气：3×4=12。</strong><br>
+          他微微一笑，开始写第二题。"
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>单一风格 + 可选切换</h3>
+      <p>默认使用<strong>幽默吐槽风</strong>（最吸引人），在设置中可以切换到悬疑或热血风格。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #059669;">推荐 · 降低 AI 生成复杂度，保证质量</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>根据主题自动匹配风格</h3>
+      <p>武侠→热血、侦探→悬疑、校园→幽默、科幻→惊奇、怪盗→悬疑。每种主题有固定的叙事基调。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #f59e0b;">灵活 · 但 Prompt 更复杂</div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>混合风格：幽默为底色，按情节切换</h3>
+      <p>日常场景用幽默，战斗/紧张场景用热血，解谜场景用悬疑。AI 自行判断切换。</p>
+      <div style="margin-top: 8px; font-size: 12px; color: #ef4444;">效果最好 · 但 AI 一致性最难控制</div>
+    </div>
+  </div>
+</div>
