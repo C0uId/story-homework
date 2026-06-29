@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>知识剧场 ✨ 体验版</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#FFF8F0;min-height:100vh;overflow-x:hidden}
+#app{min-height:100vh;position:relative;overflow:hidden}
+
+/* ===== 浮动装饰 ===== */
+.floating-emoji{position:fixed;pointer-events:none;z-index:0;font-size:28px;opacity:.6;animation:floatAround 6s ease-in-out infinite}
+.floating-emoji:nth-child(1){top:5%;left:3%;animation-delay:0s}
+.floating-emoji:nth-child(2){top:15%;right:5%;animation-delay:1s}
+.floating-emoji:nth-child(3){top:40%;left:2%;animation-delay:2s;font-size:36px}
+.floating-emoji:nth-child(4){top:60%;right:3%;animation-delay:.5s}
+.floating-emoji:nth-child(5){top:80%;left:5%;animation-delay:3s;font-size:32px}
+.floating-emoji:nth-child(6){top:30%;right:8%;animation-delay:2.5s}
+.floating-emoji:nth-child(7){top:70%;left:8%;animation-delay:1.8s;font-size:24px}
+.floating-emoji:nth-child(8){top:90%;right:6%;animation-delay:.8s}
+@keyframes floatAround{
+0%,100%{transform:translateY(0) rotate(0deg)}
+25%{transform:translateY(-20px) rotate(5deg)}
+50%{transform:translateY(-10px) rotate(-3deg)}
+75%{transform:translateY(-25px) rotate(4deg)}
+}
+
+/* ===== 主容器 ===== */
+.main-container{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:20px 16px 40px;min-height:100vh}
+
+/* ===== 头部 ===== */
+.header{text-align:center;padding:30px 0 20px}
+.header h1{font-size:28px;color:#D4764A;margin-bottom:6px;text-shadow:1px 1px 0 rgba(212,118,74,.2)}
+.header p{font-size:15px;color:#B8957A}
+.header .step-indicator{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.step-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;background:#F0E0D0;color:#B8957A;transition:all .4s cubic-bezier(.68,-.55,.265,1.55)}
+.step-dot.active{background:#D4764A;color:#fff;transform:scale(1.15);box-shadow:0 3px 12px rgba(212,118,74,.3)}
+.step-dot.done{background:#E8C4A0;color:#fff}
+
+/* ===== 步骤标题 ===== */
+.step-title{text-align:center;font-size:22px;color:#8B5E3C;margin:24px 0 20px;font-weight:700}
+
+/* ===== 卡片网格 ===== */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:30px}
+.card-grid.large-cards{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.card{cursor:pointer;border-radius:16px;padding:20px 14px;text-align:center;background:#fff;border:3px solid #F0E0D0;transition:all .35s cubic-bezier(.68,-.55,.265,1.55);position:relative;overflow:hidden}
+.card:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 8px 25px rgba(212,118,74,.2)}
+.card.selected{border-color:#D4764A;transform:translateY(-4px) scale(1.05);box-shadow:0 8px 25px rgba(212,118,74,.3);background:linear-gradient(135deg,#FFF8F0,#FFF0E0)}
+.card .card-emoji{font-size:38px;display:block;margin-bottom:8px}
+.card .card-title{font-size:16px;font-weight:600;color:#5A3E2E}
+.card .card-sub{font-size:12px;color:#B8957A;margin-top:4px}
+.card .card-check{position:absolute;top:6px;right:8px;font-size:18px;opacity:0;transition:opacity .3s}
+.card.selected .card-check{opacity:1}
+
+/* ===== 颜色主题卡片 ===== */
+.card.color-1{border-color:#FAD6C8}
+.card.color-2{border-color:#FCE4C8}
+.card.color-3{border-color:#C8E6D8}
+.card.color-4{border-color:#D6D8F0}
+.card.color-5{border-color:#F0D0E8}
+.card.color-6{border-color:#D0E8F0}
+.card.selected.color-1{border-color:#E8987A}
+.card.selected.color-2{border-color:#E8B878}
+.card.selected.color-3{border-color:#7AB89A}
+.card.selected.color-4{border-color:#8A8CC8}
+.card.selected.color-5{border-color:#C880B0}
+.card.selected.color-6{border-color:#70B8D0}
+
+/* ===== 按钮 ===== */
+.btn-group{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+.btn{padding:12px 32px;border:none;border-radius:30px;font-size:16px;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.68,-.55,.265,1.55);display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,#D4764A,#E8987A);color:#fff;box-shadow:0 4px 15px rgba(212,118,74,.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(212,118,74,.4)}
+.btn-secondary{background:#F0E0D0;color:#8B5E3C}
+.btn-secondary:hover{background:#E8D0BC;transform:translateY(-2px)}
+.btn-danger{background:#F0C8C0;color:#A04030}
+.btn-danger:hover{background:#E8B0A8;transform:translateY(-2px)}
+.btn-success{background:#C8E6D8;color:#3A7A5A}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important}
+
+/* ===== 故事播放页 ===== */
+.story-page{padding:10px 0}
+.story-progress{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding:10px 16px;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.progress-bar{flex:1;height:6px;background:#F0E0D0;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#D4764A,#E8987A);border-radius:3px;transition:width .5s ease}
+.progress-text{font-size:14px;color:#8B5E3C;font-weight:600;white-space:nowrap}
+.story-card{background:#fff;border-radius:16px;padding:24px 20px;margin-bottom:16px;border:2px solid #F0E0D0;box-shadow:0 4px 15px rgba(0,0,0,.04);min-height:120px}
+.story-title-area{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:2px dashed #F0E0D0}
+.story-title-area .story-emoji{font-size:30px}
+.story-title-area .story-name{font-size:18px;font-weight:700;color:#5A3E2E}
+.story-title-area .story-kb{font-size:12px;background:#FFF0E0;color:#D4764A;padding:3px 10px;border-radius:20px;font-weight:600}
+.story-text{font-size:16px;line-height:1.9;color:#5A3E2E;min-height:3em}
+.story-text .cursor-blink{display:inline-block;width:2px;height:1.2em;background:#D4764A;margin-left:2px;animation:blink 1s step-end infinite;vertical-align:text-bottom}
+@keyframes blink{50%{opacity:0}}
+
+/* ===== 问答 ===== */
+.quiz-section{margin-top:20px;padding:20px;background:linear-gradient(135deg,#FFF8F0,#FFF0E0);border-radius:14px;border:2px solid #E8C4A0;animation:fadeInUp .4s ease}
+.quiz-question{font-size:17px;font-weight:600;color:#5A3E2E;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quiz-option{padding:12px 16px;border:2px solid #F0E0D0;border-radius:12px;cursor:pointer;font-size:15px;color:#5A3E2E;background:#fff;transition:all .3s;text-align:center}
+.quiz-option:hover{border-color:#D4764A;background:#FFF8F0}
+.quiz-option.correct{border-color:#5AB080;background:#E8F5E8;color:#3A7A5A}
+.quiz-option.wrong{border-color:#D06050;background:#FDE8E8;color:#A04030}
+.quiz-feedback{margin-top:12px;padding:12px 16px;border-radius:10px;font-size:15px;font-weight:600;text-align:center;animation:fadeInUp .3s ease}
+.quiz-feedback.success{background:#E8F5E8;color:#3A7A5A}
+.quiz-feedback.fail{background:#FDE8E8;color:#A04030}
+
+/* ===== 知识点标注 ===== */
+.knowledge-badge{display:inline-block;background:linear-gradient(135deg,#D4764A,#E8987A);color:#fff;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:600;margin:0 4px;cursor:default}
+
+/* ===== 动画 ===== */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.fade-enter-active{animation:fadeInUp .4s ease}
+.pop-enter-active{animation:popIn .4s cubic-bezier(.68,-.55,.265,1.55)}
+
+/* ===== 进入动画 ===== */
+.view-enter{animation:fadeInUp .45s ease}
+
+/* ===== 故事结束页 ===== */
+.story-end{text-align:center;padding:40px 20px;animation:fadeInUp .5s ease}
+.story-end .end-emoji{font-size:60px;display:block;margin-bottom:16px}
+.story-end h2{font-size:22px;color:#5A3E2E;margin-bottom:8px}
+.story-end p{color:#B8957A;margin-bottom:20px}
+
+/* ===== 响应式 ===== */
+@media(max-width:480px){
+.main-container{padding:16px 12px 30px}
+.header h1{font-size:24px}
+.card-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+.card{padding:14px 10px}
+.card .card-emoji{font-size:30px}
+.card .card-title{font-size:14px}
+.step-dot{width:30px;height:30px;font-size:11px}
+.story-card{padding:18px 14px}
+.quiz-options{grid-template-columns:1fr}
+.btn{padding:10px 24px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 浮动装饰 -->
+  <div class="floating-emoji">🌟</div>
+  <div class="floating-emoji">✨</div>
+  <div class="floating-emoji">🎯</div>
+  <div class="floating-emoji">📚</div>
+  <div class="floating-emoji">🎨</div>
+  <div class="floating-emoji">🌈</div>
+  <div class="floating-emoji">⭐</div>
+  <div class="floating-emoji">🎭</div>
+
+  <div class="main-container">
+    <!-- 头部 -->
+    <div class="header">
+      <h1>📖 知识剧场</h1>
+      <p>在冒险中学习，在故事中成长</p>
+      <div class="step-indicator" v-if="step <= 4">
+        <span class="step-dot" :class="{active:step===1,done:step>1}">①</span>
+        <span class="step-dot" :class="{active:step===2,done:step>2}">②</span>
+        <span class="step-dot" :class="{active:step===3,done:step>3}">③</span>
+        <span class="step-dot" :class="{active:step===4,done:step>4}">④</span>
+      </div>
+    </div>
+
+    <!-- ===== 步骤1：选择年级 ===== -->
+    <div v-if="step===1" class="view-enter">
+      <div class="step-title">🎒 选择你的年级</div>
+      <div class="card-grid">
+        <div v-for="g in grades" :key="g.id"
+          class="card" :class="'color-'+g.id"
+          @click="selectGrade(g)">
+          <span class="card-emoji">{{g.emoji}}</span>
+          <span class="card-title">{{g.name}}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 步骤2：选择学科 ===== -->
+    <div v-if="step===2" class="view-enter">
+      <div class="step-title">📖 选择学科</div>
+      <p style="text-align:center;color:#B8957A;margin-bottom:16px;font-size:14px">当前年级：<strong>{{selectedGradeName}}</strong></p>
+      <div class="card-grid">
+        <div v-for="s in subjects" :key="s.id"
+          class="card" :class="'color-'+s.id"
+          @click="selectSubject(s)">
+          <span class="card-emoji">{{s.emoji}}</span>
+          <span class="card-title">{{s.name}}</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" @click="step=1">← 返回</button>
+      </div>
+    </div>
+
+    <!-- ===== 步骤3：选择冒险风格 ===== -->
+    <div v-if="step===3" class="view-enter">
+      <div class="step-title">⚔️ 选择冒险风格</div>
+      <p style="text-align:center;color:#B8957A;margin-bottom:16px;font-size:14px">
+        {{selectedGradeName}} · {{selectedSubjectName}}
+      </p>
+      <div class="card-grid large-cards">
+        <div v-for="st in styles" :key="st.id"
+          class="card" :class="'color-'+st.id"
+          :class="{selected:selectedStyle && selectedStyle.id===st.id}"
+          @click="selectStyle(st)">
+          <span class="card-emoji">{{st.emoji}}</span>
+          <span class="card-title">{{st.name}}</span>
+          <span class="card-sub">{{st.desc}}</span>
+          <span class="card-check">✅</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" @click="step=2">← 返回</button>
+        <button class="btn btn-primary" :disabled="!selectedStyle" @click="step=4">
+          下一步 →
+        </button>
+      </div>
+    </div>
+
+    <!-- ===== 步骤4：选择章节 ===== -->
+    <div v-if="step===4" class="view-enter">
+      <div class="step-title">📚 选择故事章节</div>
+      <p style="text-align:center;color:#B8957A;margin-bottom:16px;font-size:14px">
+        {{selectedGradeName}} · {{selectedSubjectName}} · {{selectedStyleName}}
+      </p>
+      <div class="card-grid large-cards">
+        <div v-for="(ch,idx) in currentChapters" :key="idx"
+          class="card" :class="'color-'+(idx%6+1)"
+          @click="startStory(idx)">
+          <span class="card-emoji">{{ch.emoji}}</span>
+          <span class="card-title">{{ch.title}}</span>
+          <span class="card-sub">{{ch.subtitle}}</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary" @click="step=3">← 返回</button>
+      </div>
+    </div>
+
+    <!-- ===== 故事播放页 ===== -->
+    <div v-if="step===5" class="story-page view-enter">
+      <div class="story-progress">
+        <span class="progress-text">📺 第{{currentChapterIdx+1}}集/共{{currentChapters.length}}集</span>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{width: storyProgressPercent+'%'}"></div>
+        </div>
+      </div>
+
+      <div class="story-card">
+        <div class="story-title-area">
+          <span class="story-emoji">{{currentStory.emoji}}</span>
+          <span class="story-name">{{currentStory.title}}</span>
+          <span class="story-kb">🎯 {{currentStory.knowledgePoint}}</span>
+        </div>
+
+        <!-- 故事文本 -->
+        <div class="story-text" v-html="displayedText"></div>
+
+        <!-- 继续按钮 -->
+        <div style="text-align:center;margin-top:16px" v-if="!typingInProgress && !showQuiz && !storyFinished">
+          <button class="btn btn-primary" @click="nextParagraph">
+            {{currentParaIdx < currentStory.paragraphs.length-1 ? '继续阅读 →' : '回答提问 →'}}
+          </button>
+        </div>
+      </div>
+
+      <!-- 问答区 -->
+      <div class="quiz-section" v-if="showQuiz && currentQuiz">
+        <div class="quiz-question">❓ {{currentQuiz.question}}</div>
+        <div class="quiz-options">
+          <div v-for="(opt,oi) in currentQuiz.options" :key="oi"
+            class="quiz-option"
+            :class="{
+              correct: quizAnswered && oi===currentQuiz.correct,
+              wrong: quizAnswered && quizSelected===oi && oi!==currentQuiz.correct
+            }"
+            @click="answerQuiz(oi)"
+          >{{opt}}</div>
+        </div>
+        <div v-if="quizFeedback" class="quiz-feedback" :class="quizCorrect?'success':'fail'">
+          {{quizFeedback}}
+        </div>
+        <div style="text-align:center;margin-top:12px" v-if="quizCorrect && !storyFinished">
+          <button class="btn btn-success" @click="goToNextAfterQuiz">继续 →</button>
+        </div>
+      </div>
+
+      <!-- 故事结束 -->
+      <div v-if="storyFinished && !showQuiz" class="story-end">
+        <span class="end-emoji">🎉</span>
+        <h2>故事完成！</h2>
+        <p>你已经完成了「{{currentStory.title}}」的冒险旅程</p>
+        <div class="btn-group">
+          <button class="btn btn-primary" @click="nextStory">下一集 →</button>
+          <button class="btn btn-secondary" @click="backToChapters">返回目录</button>
+        </div>
+      </div>
+
+      <!-- 所有故事完成 -->
+      <div v-if="allStoriesDone" class="story-end">
+        <span class="end-emoji">🏆</span>
+        <h2>恭喜通关！</h2>
+        <p>你完成了本学科所有故事的冒险！你真是最棒的小冒险家！</p>
+        <div class="btn-group">
+          <button class="btn btn-primary" @click="backToSubjects">回学科选择</button>
+          <button class="btn btn-secondary" @click="backToHome">重新开始</button>
+        </div>
+      </div>
+
+      <div class="btn-group" v-if="step===5 && !storyFinished && !allStoriesDone">
+        <button class="btn btn-secondary" @click="backToChapters">← 返回目录</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, computed, watch, nextTick } = Vue;
+
+// ============================================================
+// 故事数据
+// ============================================================
+const STORY_DATA = {
+  // --- 数学 一年级 ---
+  math: [
+    {
+      emoji: '🔢', title: '数字王国冒险',
+      subtitle: '小精灵教1-10',
+      knowledgePoint: '认识数字1-10',
+      paragraphs: [
+        '在一个遥远的数字王国里，住着许多可爱的数字小精灵。',
+        '一天，小主人公**豆豆**来到了这个神奇的地方。',
+        '一个圆圆的 **小精灵"1"** 跳了出来，它像一根直直的魔法棒，"你好，我是数字1！"',
+        '接着，一只美丽的 **天鹅"2"** 游了过来，它弯着长长的脖子说："我是数字2！"',
+        '**蝴蝶"3"** 扇动着翅膀飞来，它的形状像两个连在一起的半圆。',
+        '**帆船"4"** 在数字河里航行，像一面飘扬的旗帜。',
+        '**钩子"5"** 挂在天空，像爷爷的拐杖。',
+        '就这样，豆豆认识了 **1、2、3、4、5**，每个数字都有自己独特的模样。',
+        '继续往前走，**哨子"6"** 吹响了，**拐杖"7"** 拄着走来，**雪人"8"** 滚着圆圆的肚子，**气球"9"** 飘在半空中。',
+        '最后，**1**和**0**手拉手，组成了 **10**！',
+        '豆豆开心地说："我认识了 **1到10** 的数字，每个数字都好有趣！"'
+      ],
+      quiz: {
+        question: '在故事中，哪个数字像一根直直的魔法棒？',
+        options: ['数字 1', '数字 2', '数字 3', '数字 4'],
+        correct: 0
+      }
+    },
+    {
+      emoji: '🍎', title: '苹果树下的算术',
+      subtitle: '小动物们学加减',
+      knowledgePoint: '10以内的加减法',
+      paragraphs: [
+        '春天到了，小兔子 **萌萌** 家的苹果树结满了红红的苹果。',
+        '萌萌数了数，树上一共有 **8** 个红苹果。她开心极了！',
+        '这时，好朋友 **小猫咪** 来了。萌萌摘了 **3** 个苹果送给小猫咪。',
+        '树上原来有8个，摘走了3个，还剩下几个呢？ **8 - 3 = 5**！',
+        '萌萌说："还剩下 **5** 个苹果。"小猫咪高兴地接过苹果说："谢谢你！"',
+        '过了一会儿，**小猪** 也来了，它带来了 **2** 个梨。',
+        '萌萌把树上的5个苹果摘了下来，加上小猪的2个梨，一共有多少个水果呢？',
+        '**5 + 2 = 7**！一共有 **7** 个水果！',
+        '三个小伙伴开心地坐在苹果树下，一起分享水果大餐。',
+        '萌萌说："原来加减法这么有用，能帮我们算清楚有多少东西！"'
+      ],
+      quiz: {
+        question: '树上原来有8个苹果，萌萌摘了3个送给小猫咪，还剩几个？',
+        options: ['3个', '4个', '5个', '6个'],
+        correct: 2
+      }
+    }
+  ],
+  // --- 语文 一年级 ---
+  chinese: [
+    {
+      emoji: '🔤', title: '拼音王国大冒险',
+      subtitle: '声母韵母历险记',
+      knowledgePoint: '声母韵母认知',
+      paragraphs: [
+        '欢迎来到拼音王国！这里有两大族群——**声母家族**和**韵母家族**。',
+        '一天，声母 **"b"** 和韵母 **"a"** 在彩虹桥上相遇了。',
+        '"你好！我是 **b**。" "我是 **a**。" 它们手拉手，变成了 **"ba"** —— 八！',
+        '声母 **"p"** 是个爱吹泡泡的小可爱，它和韵母 **"o"** 组成了 **"po"** —— 坡！',
+        '**"m"** 妈妈摸着 **"a"** 的头，发出了 **"ma"** —— 妈！',
+        '**"f"** 像一根拐杖，和 **"o"** 在一起读 **"fo"** —— 佛！',
+        '拼音国王宣布了一条重要规则：**声母在前，韵母在后，拼在一起就是音节！**',
+        '小朋友们，你们来试试拼读吧：**b-ā → bā（八）**，**m-ā → mā（妈）**！',
+        '学会了拼读规则，你就能读出所有的拼音啦！拼音王国欢迎你！'
+      ],
+      quiz: {
+        question: '拼音中，"b"和"a"拼在一起读作什么？',
+        options: ['ba（八）', 'po（坡）', 'ma（妈）', 'fo（佛）'],
+        correct: 0
+      }
+    },
+    {
+      emoji: '🌄', title: '日月山水的故事',
+      subtitle: '认识象形汉字',
+      knowledgePoint: '认识象形文字',
+      paragraphs: [
+        '很久很久以前，人们还没有发明汉字，他们用画画来记录事情。',
+        '**太阳**圆圆的、红红的，古人就画一个圆圈中间点一点，这就是 **"日"** 字的起源。',
+        '**月亮**弯弯的，像小船挂在天上，古人画了一个弯弯的月牙，这就是 **"月"**。',
+        '**山**高高的，有三个山峰，古人画了三座连在一起的山峰，变成了 **"山"**。',
+        '**水**流起来弯弯曲曲的，古人画了几条波浪线，这就是 **"水"**。',
+        '看！ **日 + 月 = 明**，太阳和月亮在一起，世界就明亮了！',
+        '**山 + 水 = 山水**，有山有水的地方，就是最美的风景。',
+        '每一个汉字都有一个故事。我们的祖先把世界画进了文字里，真是太聪明了！'
+      ],
+      quiz: {
+        question: '古人把圆圆的太阳画下来，变成了哪个字？',
+        options: ['月', '日', '山', '水'],
+        correct: 1
+      }
+    }
+  ],
+  // --- 英语 一年级 ---
+  english: [
+    {
+      emoji: '🎵', title: '26个字母森林',
+      subtitle: '字母歌大冒险',
+      knowledgePoint: '26个英文字母',
+      paragraphs: [
+        '欢迎来到神奇的 **字母森林**！这里有26个字母小精灵在等着你！',
+        '字母 **A** 像一座尖尖的山峰，它说："**A is for Apple！**"',
+        '**B** 像两个圆圆的肚子，它说："**B is for Ball！**"',
+        '**C** 像弯弯的月牙："**C is for Cat！**"',
+        '**D** 像半个月亮："**D is for Dog！**"',
+        '字母们排着队，一起唱起了字母歌：',
+        '"**A B C D E F G, H I J K L M N, O P Q R S T, U V W X Y Z！**"',
+        '现在轮到你了！跟着字母森林的小精灵们一起唱吧！',
+        '**A is for Apple, 🍎  B is for Ball, ⚽  C is for Cat, 🐱**',
+        '学会了字母歌，你就拿到了打开英语世界大门的钥匙！🔑'
+      ],
+      quiz: {
+        question: '"A is for _____" 空格里应该是什么？',
+        options: ['Ball', 'Cat', 'Apple', 'Dog'],
+        correct: 2
+      }
+    },
+    {
+      emoji: '🌈', title: '彩虹小镇',
+      subtitle: '学习颜色单词',
+      knowledgePoint: '颜色单词认知',
+      paragraphs: [
+        '在美丽的 **彩虹小镇**，每种颜色都有自己的小房子！',
+        '**Red** 红色的房子里住着小狐狸，它最喜欢红色的草莓。',
+        '**Yellow** 黄色的房子里住着小鸭子，嘎嘎嘎！',
+        '**Blue** 蓝色的房子里住着小鱼，它在蓝色的河里游来游去。',
+        '**Green** 绿色的房子里住着小青蛙，它在绿色的荷叶上跳。',
+        '**Orange** 橙色的房子里住着小松鼠，它抱着一个大橙子。',
+        '雨过天晴，天空中出现了一道美丽的 **rainbow**！',
+        '"**Red, Yellow, Blue, Green, Orange！**" 小动物们一起念着颜色的名字。',
+        '颜色让世界变得五彩缤纷，你能用英文说出你最喜欢的颜色吗？'
+      ],
+      quiz: {
+        question: '蓝色的英文怎么说？',
+        options: ['Red', 'Green', 'Yellow', 'Blue'],
+        correct: 3
+      }
+    }
+  ],
+  // --- 科学 一年级 ---
+  science: [
+    {
+      emoji: '🐘', title: '神奇动物园',
+      subtitle: '认识各种动植物',
+      knowledgePoint: '动植物的特征',
+      paragraphs: [
+        '今天，小探险家 **乐乐** 来到了神奇动物园！',
+        '首先看到的是 **大象** 🐘，它有长长的鼻子、大大的耳朵，还能用鼻子喷水！',
+        '"大象是世界上最大的陆地动物！" 动物园管理员说。',
+        '接下来是 **长颈鹿** 🦒，它的脖子特别特别长，可以吃到高高的树上的叶子。',
+        '"看！花丛中有 **蝴蝶** 🦋！" 乐乐喊道。蝴蝶有美丽的翅膀，在花丛中飞来飞去采花蜜。',
+        '池塘里，**荷花** 🌸 盛开了，粉色的花瓣漂在水面上，**青蛙** 🐸 蹲在荷叶上呱呱叫。',
+        '树上的 **小鸟** 🐦 叽叽喳喳地唱着歌，**松鼠** 🐿️ 在树枝间跳来跳去找松果。',
+        '乐乐明白了：每个动物和植物都有自己的特点和生活习惯，它们都是大自然大家庭的一员！'
+      ],
+      quiz: {
+        question: '世界上最大的陆地动物是什么？',
+        options: ['长颈鹿', '大象', '老虎', '河马'],
+        correct: 1
+      }
+    },
+    {
+      emoji: '☁️', title: '小云朵的旅行',
+      subtitle: '认识天气变化',
+      knowledgePoint: '天气与自然现象',
+      paragraphs: [
+        '天空中有一朵白白的小云朵，它叫 **白白**，它想去世界各地旅行。',
+        '白白飘啊飘，遇到了 **太阳公公** ☀️。太阳公公说："今天是个大晴天！"',
+        '白白觉得有点热，它继续往前走。这时，**风婆婆** 🌬️ 来了，呼呼地吹着。',
+        '"起风了！" 白白被风吹得翻了个跟头，好开心！',
+        '走着走着，白白发现自己变得越来越胖、越来越灰了。',
+        '"要下雨了！" 白白变成了 **乌云** ☁️，哗啦啦地下起了雨 🌧️。',
+        '雨水落在地上，**小树苗** 🌱 喝到了水，开心地挺直了腰。',
+        '雨停了，**彩虹** 🌈 出现在天边，白白又变回了洁白的小云朵。',
+        '白白明白了：晴天、刮风、下雨、彩虹，都是天气的变化，每种天气都很重要！'
+      ],
+      quiz: {
+        question: '小云朵白白变灰变胖后，发生了什么？',
+        options: ['刮大风', '下雪了', '下起雨来', '出了彩虹'],
+        correct: 2
+      }
+    }
+  ],
+  // --- 历史 一年级 ---
+  history: [
+    {
+      emoji: '📜', title: '四大发明的故事',
+      subtitle: '古人的智慧结晶',
+      knowledgePoint: '中国四大发明',
+      paragraphs: [
+        '在很久很久以前的中国，聪明的古人发明了四样了不起的东西，直到现在全世界都在用！',
+        '第一样是 **造纸术** 📄。古人在竹片上写字太重了，后来 **蔡伦** 发明了用树皮和破布造纸的方法。',
+        '纸张轻便又好用，大家可以在上面写字、画画，知识就这样传播开来！',
+        '第二样是 **印刷术** 🖨️。**毕昇** 发明了活字印刷，把字刻在小方块上排在一起，就能印出很多本书。',
+        '第三样是 **指南针** 🧭。古人发现磁石总是指向南方，于是做出了指南针。',
+        '有了指南针，航海的船在大海上也不会迷路了！',
+        '第四样是 **火药** 💥。炼丹的人不小心发现了一种能燃烧爆炸的东西，后来做成了烟花和武器。',
+        '造纸术、印刷术、指南针、火药，合称 **"四大发明"**，是中国古人智慧的结晶！'
+      ],
+      quiz: {
+        question: '下面哪一样不是中国的四大发明？',
+        options: ['造纸术', '指南针', '火药', '瓷器'],
+        correct: 3
+      }
+    },
+    {
+      emoji: '🏮', title: '春节的传说',
+      subtitle: '年兽的故事',
+      knowledgePoint: '传统节日文化',
+      paragraphs: [
+        '很久很久以前，海里有一只可怕的怪兽叫 **"年"** 🐉。',
+        '每到除夕，"年"就会爬上岸，吃掉村里的牛羊，大家都很害怕。',
+        '有一年除夕，村里来了一位白胡子老爷爷。',
+        '村民们劝老爷爷快跑，说年兽要来了。老爷爷笑着说："我有办法！"',
+        '"年"来了！老爷爷在门上贴了 **红纸** 🧧，点燃了 **爆竹** 🧨。',
+        '"噼里啪啦！" 年兽最怕红色和响声，吓得逃回了海里，再也不敢出来了。',
+        '从那以后，每到除夕，人们都会贴 **春联**、放 **鞭炮**、挂 **灯笼** 🏮。',
+        '全家人围坐在一起吃 **年夜饭** 🥟，热热闹闹地 **守岁**，迎接新年的到来。',
+        '这就是 **春节** 的传说——中国最重要的传统节日！'
+      ],
+      quiz: {
+        question: '年兽最害怕什么？',
+        options: ['水和火', '红色和响声', '刀和剑', '光和电'],
+        correct: 1
+      }
+    }
+  ]
+};
+
+// 学科映射
+const SUBJECT_MAP = {
+  math: { id: 1, name: '数学', emoji: '📐' },
+  chinese: { id: 2, name: '语文', emoji: '📖' },
+  english: { id: 3, name: '英语', emoji: '🔤' },
+  science: { id: 4, name: '科学', emoji: '🔬' },
+  history: { id: 5, name: '历史', emoji: '🏛️' }
+};
+
+// ============================================================
+// Vue 应用
+// ============================================================
+createApp({
+  setup() {
+    // --- 状态 ---
+    const step = ref(1);
+    const selectedGrade = ref(null);
+    const selectedSubject = ref(null);
+    const selectedStyle = ref(null);
+    const currentChapterIdx = ref(0);
+
+    // 故事播放状态
+    const currentParaIdx = ref(0);
+    const displayedText = ref('');
+    const typingInProgress = ref(false);
+    const showQuiz = ref(false);
+    const storyFinished = ref(false);
+    const allStoriesDone = ref(false);
+    const quizAnswered = ref(false);
+    const quizSelected = ref(null);
+    const quizCorrect = ref(false);
+    const quizFeedback = ref('');
+
+    let typingTimer = null;
+
+    // --- 数据 ---
+    const grades = [
+      { id: 1, name: '一年级', emoji: '🌱' },
+      { id: 2, name: '二年级', emoji: '🌿' },
+      { id: 3, name: '三年级', emoji: '🌳' },
+      { id: 4, name: '四年级', emoji: '🍀' },
+      { id: 5, name: '五年级', emoji: '🌸' },
+      { id: 6, name: '六年级', emoji: '🌺' }
+    ];
+
+    const subjects = [
+      { id: 1, name: '数学', key: 'math', emoji: '📐' },
+      { id: 2, name: '语文', key: 'chinese', emoji: '📖' },
+      { id: 3, name: '英语', key: 'english', emoji: '🔤' },
+      { id: 4, name: '科学', key: 'science', emoji: '🔬' },
+      { id: 5, name: '历史', key: 'history', emoji: '🏛️' }
+    ];
+
+    const styles = [
+      { id: 1, name: '武林秘籍', emoji: '🗡️', desc: '功夫闯关学知识' },
+      { id: 2, name: '怪盗对决', emoji: '🎭', desc: '智者胜出的较量' },
+      { id: 3, name: '名探事件簿', emoji: '🔍', desc: '线索推理破迷案' },
+      { id: 4, name: '星际探险', emoji: '🚀', desc: '穿越宇宙的冒险' },
+      { id: 5, name: '校园奇遇', emoji: '🏫', desc: '身边的有趣发现' }
+    ];
+
+    // --- computed ---
+    const selectedGradeName = computed(() => selectedGrade.value ? selectedGrade.value.name : '');
+    const selectedSubjectName = computed(() => selectedSubject.value ? selectedSubject.value.name : '');
+    const selectedSubjectKey = computed(() => selectedSubject.value ? selectedSubject.value.key : '');
+    const selectedStyleName = computed(() => selectedStyle.value ? selectedStyle.value.name : '');
+
+    const currentChapters = computed(() => {
+      const key = selectedSubjectKey.value;
+      const data = STORY_DATA[key];
+      if (!data) return [];
+      return data.map((s, i) => ({
+        idx: i,
+        emoji: s.emoji,
+        title: s.title,
+        subtitle: s.subtitle
+      }));
+    });
+
+    const currentStory = computed(() => {
+      const key = selectedSubjectKey.value;
+      const data = STORY_DATA[key];
+      if (!data || !data[currentChapterIdx.value]) return null;
+      return data[currentChapterIdx.value];
+    });
+
+    const currentQuiz = computed(() => {
+      if (!currentStory.value) return null;
+      return currentStory.value.quiz || null;
+    });
+
+    const storyProgressPercent = computed(() => {
+      if (!currentStory.value) return 0;
+      const total = currentStory.value.paragraphs.length;
+      const done = currentParaIdx.value + (showQuiz.value || storyFinished.value ? 1 : 0);
+      return Math.min(100, Math.round((done / total) * 100));
+    });
+
+    // --- 方法 ---
+    function selectGrade(g) {
+      selectedGrade.value = g;
+      step.value = 2;
+    }
+
+    function selectSubject(s) {
+      selectedSubject.value = s;
+      selectedStyle.value = null;
+      step.value = 3;
+    }
+
+    function selectStyle(st) {
+      selectedStyle.value = st;
+    }
+
+    function startStory(idx) {
+      currentChapterIdx.value = idx;
+      currentParaIdx.value = 0;
+      displayedText.value = '';
+      showQuiz.value = false;
+      storyFinished.value = false;
+      allStoriesDone.value = false;
+      quizAnswered.value = false;
+      quizSelected.value = null;
+      quizCorrect.value = false;
+      quizFeedback.value = '';
+      step.value = 5;
+      nextTick(() => {
+        typeParagraph(0);
+      });
+    }
+
+    function typeParagraph(paraIdx) {
+      if (!currentStory.value) return;
+      const paragraphs = currentStory.value.paragraphs;
+      if (paraIdx >= paragraphs.length) {
+        // 所有段落都显示完了
+        typingInProgress.value = false;
+        showQuiz.value = true;
+        return;
+      }
+
+      typingInProgress.value = true;
+      const text = paragraphs[paraIdx];
+      let charIdx = 0;
+      displayedText.value = '';
+
+      if (typingTimer) clearInterval(typingTimer);
+
+      typingTimer = setInterval(() => {
+        if (charIdx < text.length) {
+          // 特殊处理粗体标记
+          const remaining = text.substring(charIdx);
+          let nextChar = text[charIdx];
+
+          // 遇到 ** 标记，直接输出，让浏览器渲染
+          displayedText.value += nextChar;
+          charIdx++;
+        } else {
+          clearInterval(typingTimer);
+          typingTimer = null;
+          typingInProgress.value = false;
+          currentParaIdx.value = paraIdx + 1;
+        }
+      }, 50);
+    }
+
+    function nextParagraph() {
+      if (typingInProgress.value) return;
+      if (!currentStory.value) return;
+
+      const paraIdx = currentParaIdx.value;
+      const paragraphs = currentStory.value.paragraphs;
+
+      if (paraIdx < paragraphs.length) {
+        // 添加分隔
+        displayedText.value += '<br><br>';
+        typeParagraph(paraIdx);
+      } else {
+        // 所有段落完成，显示问答
+        showQuiz.value = true;
+      }
+    }
+
+    function answerQuiz(optIdx) {
+      if (quizAnswered.value) return;
+      quizAnswered.value = true;
+      quizSelected.value = optIdx;
+
+      if (optIdx === currentQuiz.value.correct) {
+        quizCorrect.value = true;
+        quizFeedback.value = '✅ 太棒了！回答完全正确！你真是个聪明的小冒险家！🎉';
+      } else {
+        quizCorrect.value = false;
+        quizFeedback.value = '💡 提示：再仔细想想故事里的内容哦，答案就在刚才读过的故事中！';
+        // 2秒后可重试
+        setTimeout(() => {
+          quizAnswered.value = false;
+          quizSelected.value = null;
+          quizFeedback.value = '';
+        }, 2000);
+      }
+    }
+
+    function goToNextAfterQuiz() {
+      // 检查是否还有下一个故事
+      const chapters = currentChapters.value;
+      if (currentChapterIdx.value < chapters.length - 1) {
+        // 标记为完成，显示故事结束
+        storyFinished.value = true;
+        showQuiz.value = false;
+      } else {
+        // 所有故事完成
+        storyFinished.value = true;
+        allStoriesDone.value = true;
+        showQuiz.value = false;
+      }
+    }
+
+    function nextStory() {
+      const chapters = currentChapters.value;
+      if (currentChapterIdx.value < chapters.length - 1) {
+        startStory(currentChapterIdx.value + 1);
+      } else {
+        allStoriesDone.value = true;
+        storyFinished.value = false;
+      }
+    }
+
+    function backToChapters() {
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+      step.value = 4;
+    }
+
+    function backToSubjects() {
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+      selectedSubject.value = null;
+      selectedStyle.value = null;
+      step.value = 2;
+    }
+
+    function backToHome() {
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+      selectedGrade.value = null;
+      selectedSubject.value = null;
+      selectedStyle.value = null;
+      step.value = 1;
+    }
+
+    return {
+      step, grades, subjects, styles,
+      selectedGrade, selectedSubject, selectedStyle,
+      selectedGradeName, selectedSubjectName, selectedStyleName,
+      currentChapters, currentChapterIdx,
+      currentStory, currentQuiz,
+      currentParaIdx, displayedText,
+      typingInProgress, showQuiz, storyFinished, allStoriesDone,
+      quizAnswered, quizSelected, quizCorrect, quizFeedback,
+      storyProgressPercent,
+      selectGrade, selectSubject, selectStyle,
+      startStory, nextParagraph, answerQuiz,
+      goToNextAfterQuiz, nextStory,
+      backToChapters, backToSubjects, backToHome
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

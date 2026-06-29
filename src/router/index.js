@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
 import StoryPlayPage from '../views/StoryPlayPage.vue'
 import KnowledgeMapPage from '../views/KnowledgeMapPage.vue'
@@ -21,7 +21,7 @@ const VALID_GRADES = ['1', '2', '3', '4', '5', '6']
 const VALID_SUBJECTS = ['math', 'chinese', 'english', 'science', 'history']
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
   scrollBehavior() {
     return { top: 0 }
