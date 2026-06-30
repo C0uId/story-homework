@@ -2,8 +2,8 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { knowledgeMap } from '../data/knowledgeMap'
 import branchingData, { recaps } from '../data/branchingData'
-import { recordEpisodeComplete, recordChapterComplete, getChapterProgress, recordChapterReview, getReviewStageName } from '../utils/learningProgress'
-import { getCharacter, addExp, unlockSkill, tryUnlockTalent, increaseSubjectMastery, hasCharacter, EXP_VALUES, submitStoryPersonalityChoice, addExplorationPoints } from '../utils/characterSystem'
+import { recordEpisodeComplete, recordChapterComplete, getChapterProgress, recordChapterReview, getReviewStageName, startSession, endSession, recordSessionAnswer, recordSessionEpisode, recordAnswerDetail } from '../utils/learningProgress'
+import { getCharacter, addExp, unlockSkill, tryUnlockTalent, increaseSubjectMastery, hasCharacter, EXP_VALUES, submitStoryPersonalityChoice, addExplorationPoints, getPersonalityQuestion, PERSONALITY_QUESTIONS, submitPersonalityChoice } from '../utils/characterSystem'
 import { generateStoryForPoint, generateStoryForChapter, generateNextBatch } from '../utils/storyGenerator'
 import { speak, stop as ttsStop, togglePause, getIsPaused, getSettings as getTTSSettings, updateSetting as updateTTSSetting, toggleEnabled as ttsToggleEnabled, isTTSAvailable } from '../utils/tts'
 import { THEME_STYLES } from '../data/themes'
@@ -29,6 +29,9 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
   // 性格探测
   const personalityResult = ref(null)
   const showPersonalityInsight = ref(false)
+  // 故事中注入的性格题目（在知识题之前展示）
+  const showInjectedPersonality = ref(false)
+  const injectedPersonalityData = ref(null) // { index, scene, options }
 
   // Recap
   const showRecap = ref(false)
@@ -62,6 +65,7 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
   const ttsPaused = ref(false)
   const showTTSSettings = ref(false)
   const ttsRate = ref(getTTSSettings().rate)
+  const ttsVoiceName = ref(getTTSSettings().voiceName || '')
 
   // 勇气机制 & 连击
   const comboCount = ref(0)        // 连续答对计数
@@ -73,6 +77,10 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
   const showComboAnim = ref(false) // 连击动画
   const correctAnimKey = ref(0)    // 答对动画触发key
   const wrongAnimKey = ref(0)      // 答错动画触发key
+
+  // 学习时间追踪
+  const episodeStartTime = ref(0)
+  const sessionStarted = ref(false)
 
   // Review scoring
   const sessionCorrectAnswers = ref(0)
@@ -211,6 +219,13 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
   // ===== Story start =====
   function startStoryIfNeeded() {
     if (storyData.value?.episodes?.length > 0) {
+      // 启动学习会话
+      if (!sessionStarted.value) {
+        startSession({ subject, grade, chapterId, pointId, mode })
+        sessionStarted.value = true
+      }
+      episodeStartTime.value = Date.now()
+
       if (isReviewMode && chapterId) {
         const progress = getChapterProgress(chapterId)
         const stageName = progress ? getReviewStageName(progress.reviewStage) : '复习'
@@ -225,6 +240,88 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
 
   // ===== Actions =====
   function handleShowQuestion() {
+    // 先尝试注入性格题目（未完成探测时）
+    if (tryInjectPersonality()) return
+    // 否则直接显示知识题
+    currentQuestionIndex.value = 0
+    episodeScore.value = { correct: 0, total: currentQuestions.value.length }
+    showQuestion.value = true
+  }
+
+  /**
+   * 注入性格时刻（优先用 AI 生成的，回退用题库注入）
+   */
+  function tryInjectPersonality() {
+    if (!hasCharacter()) return false
+    const char = getCharacter()
+    if (char.personality.isComplete) return false
+
+    // 1. 优先使用 AI 生成的性格时刻（自然融入故事剧情）
+    const ep = currentEpisode.value
+    if (ep?.personalityMoment?.options?.length >= 2) {
+      injectedPersonalityData.value = {
+        isAIMoment: true,
+        scene: ep.personalityMoment.narrative,
+        options: ep.personalityMoment.options,
+      }
+      showInjectedPersonality.value = true
+      return true
+    }
+
+    // 2. 回退：从题库找一个未答的题
+    const answered = char.personality.answeredIndices || []
+    for (let i = 0; i < PERSONALITY_QUESTIONS.length; i++) {
+      if (!answered.includes(i)) {
+        const question = getPersonalityQuestion(i)
+        if (!question) continue
+        injectedPersonalityData.value = {
+          isAIMoment: false,
+          index: i,
+          scene: question.scene,
+          options: question.options,
+        }
+        showInjectedPersonality.value = true
+        return true
+      }
+    }
+    return false
+  }
+
+  /**
+   * 处理性格选择
+   */
+  function handleInjectedPersonalityChoice(optionIndex) {
+    if (!injectedPersonalityData.value || showPersonalityInsight.value) return
+
+    const data = injectedPersonalityData.value
+    const option = data.options[optionIndex]
+
+    let result
+    if (data.isAIMoment) {
+      // AI 生成的性格时刻 → submitStoryPersonalityChoice
+      result = submitStoryPersonalityChoice(option.trait)
+    } else {
+      // 题库注入 → submitPersonalityChoice（追踪 answeredIndices）
+      result = submitPersonalityChoice(data.index, optionIndex)
+    }
+
+    personalityResult.value = result
+    showPersonalityInsight.value = true
+
+    if (hasCharacter()) {
+      addExp(8, '性格探索')
+    }
+  }
+
+  /**
+   * 性格洞察确认后，继续进入知识题
+   */
+  function continueAfterPersonality() {
+    showInjectedPersonality.value = false
+    showPersonalityInsight.value = false
+    personalityResult.value = null
+    injectedPersonalityData.value = null
+
     currentQuestionIndex.value = 0
     episodeScore.value = { correct: 0, total: currentQuestions.value.length }
     showQuestion.value = true
@@ -244,6 +341,25 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
       isCorrect = idx === q.correct
     }
 
+    // 记录答题详情
+    const timeSpent = episodeStartTime.value > 0 ? Date.now() - episodeStartTime.value : 0
+    recordAnswerDetail({
+      pointId,
+      chapterId,
+      subject,
+      grade,
+      questionId: currentEpisode.value?.id + '_q' + currentQuestionIndex.value,
+      questionText: q.text || q.question || '',
+      selectedAnswer: idx,
+      correctAnswer: q.correct,
+      isCorrect,
+      episodeIndex: currentEpisodeIndex.value,
+      episodeTitle: currentEpisode.value?.title || '',
+      timeSpent,
+      hintUsed: wrongAttempts.value > 0,
+      wrongAttempts: wrongAttempts.value,
+    })
+
     // 第一次答对
     if (isCorrect) {
       answerResult.value = true
@@ -252,6 +368,9 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
       comboCount.value++
       wrongAttempts.value = 0
       showHint.value = false
+
+      // 记录会话答题
+      recordSessionAnswer(true)
 
       // 探索值奖励
       let expAmount = 10
@@ -282,6 +401,9 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
     // 答错处理
     wrongAttempts.value++
     comboCount.value = 0 // 连击中断
+
+    // 记录会话答题
+    recordSessionAnswer(false)
 
     // 触发答错动画
     wrongAnimKey.value++
@@ -365,6 +487,9 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
   function nextEpisode() {
     ttsStop(); ttsSpeaking.value = false
     if (currentEpisodeIndex.value < totalEpisodes.value - 1) {
+      // 记录剧集完成
+      recordSessionEpisode()
+      episodeStartTime.value = Date.now()
       // 重置勇气机制状态
       wrongAttempts.value = 0
       showHint.value = false
@@ -378,6 +503,7 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
       showQuestion.value = false; selectedAnswer.value = null; answerResult.value = null
       currentQuestionIndex.value = 0; episodeScore.value = { correct: 0, total: 0 }
       personalityResult.value = null; showPersonalityInsight.value = false
+      showInjectedPersonality.value = false; injectedPersonalityData.value = null
       startTyping(storyData.value.episodes[currentEpisodeIndex.value].narrative)
 
       if (mode === 'persistent' && chapterId && currentEpisodeIndex.value >= 3 && storyData.value && !storyData.value._allPointsLoaded && !nextBatchLoading.value) {
@@ -427,6 +553,9 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
     if (pointId) {
       trackEpisodeProgress(false)
     }
+    // 记录最后一集并结束会话
+    recordSessionEpisode()
+    endSession()
     if (isReviewMode && chapterId) {
       const reviewScore = completedEpisodes.value.size > 0 ? Math.round((sessionCorrectAnswers.value / Math.max(completedEpisodes.value.size, 1)) * 100) : 60
       recordChapterReview(chapterId, reviewScore)
@@ -497,6 +626,26 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
     if (ttsSpeaking.value) {
       ttsStop()
       ttsSpeaking.value = false
+    }
+  }
+
+  function changeTTSVoice(voiceName) {
+    ttsVoiceName.value = voiceName
+    updateTTSSetting('voiceName', voiceName)
+    if (ttsSpeaking.value) {
+      ttsStop()
+      ttsSpeaking.value = false
+    }
+    // 自动用新声音重新朗读当前故事
+    const narrative = typingText.value || currentEpisode.value?.narrative || ''
+    if (narrative && ttsEnabled.value) {
+      setTimeout(() => {
+        speak(narrative, {
+          onEnd: () => { ttsSpeaking.value = false; ttsPaused.value = false },
+        })
+        ttsSpeaking.value = true
+        ttsPaused.value = false
+      }, 100)
     }
   }
 
@@ -619,6 +768,11 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
 
   onUnmounted(() => {
     ttsStop()
+    // 确保会话被结束记录
+    if (sessionStarted.value) {
+      endSession()
+      sessionStarted.value = false
+    }
     if (typingTimer.value) { clearInterval(typingTimer.value); typingTimer.value = null }
     if (wrongTypingTimer.value) { clearInterval(wrongTypingTimer.value); wrongTypingTimer.value = null }
   })
@@ -628,24 +782,27 @@ export default function useStoryPlayer({ grade, subject, theme, mode, pointId, c
     storyData, currentEpisodeIndex, showQuestion, selectedAnswer, answerResult,
     completedEpisodes, typingText, isTyping, currentQuestionIndex, episodeScore,
     personalityResult, showPersonalityInsight,
+    showInjectedPersonality, injectedPersonalityData,
     showRecap, recapText, showChapterComplete,
     showReviewRecap, reviewRecapText,
     characterUnlocks,
     showWrongPath, wrongPathText, isWrongTyping,
     isAIGenerating, aiGenerateProgress, streamingText, nextBatchLoading, nextBatchProgress, characterName,
-    ttsEnabled, ttsSpeaking, ttsPaused, showTTSSettings, ttsRate,
+    ttsEnabled, ttsSpeaking, ttsPaused, showTTSSettings, ttsRate, ttsVoiceName,
     comboCount, wrongAttempts, showHint, currentHint,
     explorationGained, showExplorationAnim, showComboAnim,
     correctAnimKey, wrongAnimKey,
+    episodeStartTime, sessionStarted,
     // Computed
     ts, currentEpisode, totalEpisodes, progress,
     currentQuestions, currentQuestion, isLastQuestion, isReviewEpisode, isPersonalityQuestion,
     gradeInfo, subjectInfo, chapterRecapSummary, chapterProgressInfo, nextReviewDisplay, hasNextChapter,
     // Actions
     handleShowQuestion, selectAnswer, selectPersonalityChoice, handleNextQuestion,
+    handleInjectedPersonalityChoice, continueAfterPersonality,
     useHintRetry,
     nextEpisode, dismissRecap, dismissReviewRecap, continueFromWrongPath,
     jumpToEpisode, finishStory, goHome, retryAIGeneration, goNextChapter,
-    toggleTTS, toggleTTSPause, stopTTS, changeTTSRate,
+    toggleTTS, toggleTTSPause, stopTTS, changeTTSRate, changeTTSVoice,
   }
 }

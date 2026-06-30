@@ -13,7 +13,7 @@ export const mathKnowledge = {
     chapters: [
       // ===== 一年级上册 =====
       {
-        id: 'ch1-1', title: '准备课', icon: '🔢',
+        id: 'ch1-1', title: '准备课', icon: '🔢', semester: '上册',
         points: [
           { id: 'p1-1', name: '数一数', difficulty: 1, keywords: ['数数', '点数', '一一对应'], concept: '通过观察场景图，用点数的方法数出物体的数量，建立数与物的对应关系', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-2'] },
           { id: 'p1-2', name: '比多少', difficulty: 1, keywords: ['比较', '多', '少', '同样多'], concept: '用一一对应的方法比较两组物体数量的多少，理解多、少、同样多的含义', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-1'] },
@@ -24,7 +24,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-2', title: '位置', icon: '📍',
+        id: 'ch1-2', title: '位置', icon: '📍', semester: '上册',
         points: [
           { id: 'p1-7', name: '上下', difficulty: 1, keywords: ['上', '下', '位置关系'], concept: '认识上下的位置关系，能用"上""下"描述物体的相对位置', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-8'] },
           { id: 'p1-8', name: '前后', difficulty: 1, keywords: ['前', '后', '位置关系'], concept: '认识前后的位置关系，能用"前""后"描述物体的相对位置', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-7'] },
@@ -35,7 +35,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-3', title: '1-5的认识和加减法', icon: '➕',
+        id: 'ch1-3', title: '1-5的认识和加减法', icon: '➕', semester: '上册',
         points: [
           { id: 'p1-13', name: '1-5各数的认识', difficulty: 1, keywords: ['认识数字', '数量', '1-5'], concept: '认识1-5各数，会读会写，理解每个数表示的含义', questionTypes: ['填空', '选择', '判断'], relatedPoints: ['p1-14'] },
           { id: 'p1-14', name: '比大小', difficulty: 1, keywords: ['大小比较', '>', '<', '='], concept: '用">""<""="比较1-5各数的大小，理解符号的含义', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-6'] },
@@ -46,7 +46,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-4', title: '认识图形（一）', icon: '🔷',
+        id: 'ch1-4', title: '认识图形（一）', icon: '🔷', semester: '上册',
         points: [
           { id: 'p1-19', name: '认识长方体', difficulty: 1, keywords: ['长方体', '立体图形', '面'], concept: '初步认识长方体的特征，能从实物中辨认出长方体', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p1-20'] },
           { id: 'p1-20', name: '认识正方体', difficulty: 1, keywords: ['正方体', '立体图形', '面'], concept: '初步认识正方体的特征，能从实物中辨认出正方体', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p1-19'] },
@@ -57,7 +57,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-5', title: '6-10的认识和加减法', icon: '🔢',
+        id: 'ch1-5', title: '6-10的认识和加减法', icon: '🔢', semester: '上册',
         points: [
           { id: 'p1-25', name: '6-10各数的认识', difficulty: 1, keywords: ['认识数字', '6-10', '数数'], concept: '认识6-10各数，会读会写，理解每个数表示的含义和数的顺序', questionTypes: ['填空', '选择', '判断'], relatedPoints: ['p1-26'] },
           { id: 'p1-26', name: '10以内数的大小比较', difficulty: 1, keywords: ['大小比较', '>', '<', '='], concept: '掌握10以内数的大小比较方法，会用符号表示大小关系', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p1-14'] },
@@ -68,7 +68,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-6', title: '11-20各数的认识', icon: '🔟',
+        id: 'ch1-6', title: '11-20各数的认识', icon: '🔟', semester: '上册',
         points: [
           { id: 'p1-31', name: '11-20各数的认识', difficulty: 1, keywords: ['11-20', '认识数', '读写'], concept: '认识11-20各数，理解这些数是由1个十和几个一组成的', questionTypes: ['填空', '选择', '判断'], relatedPoints: ['p1-32'] },
           { id: 'p1-32', name: '数的组成', difficulty: 1, keywords: ['十位', '个位', '十和一'], concept: '理解11-20各数的组成，知道十几是由1个十和几个一组成', questionTypes: ['填空', '选择'], relatedPoints: ['p1-31'] },
@@ -90,7 +90,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-8', title: '20以内的进位加法', icon: '🧮',
+        id: 'ch1-8', title: '20以内的进位加法', icon: '🧮', semester: '上册',
         points: [
           { id: 'p1-43', name: '9加几', difficulty: 1, keywords: ['9加几', '凑十法', '进位加'], concept: '掌握9加几的计算方法，学会用"凑十法"进行计算', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p1-44'] },
           { id: 'p1-44', name: '8、7、6加几', difficulty: 1, keywords: ['8加几', '7加几', '6加几', '凑十法'], concept: '掌握8、7、6加几的计算方法，灵活运用凑十法', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p1-43'] },
@@ -102,7 +102,7 @@ export const mathKnowledge = {
       },
       // ===== 一年级下册 =====
       {
-        id: 'ch1-9', title: '认识图形（二）', icon: '🔷',
+        id: 'ch1-9', title: '认识图形（二）', icon: '🔷', semester: '下册',
         points: [
           { id: 'p1-49', name: '认识长方形', difficulty: 1, keywords: ['长方形', '平面图形', '对边相等'], concept: '认识长方形的特征：对边相等，四个角都是直角', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p1-50'] },
           { id: 'p1-50', name: '认识正方形', difficulty: 1, keywords: ['正方形', '平面图形', '四边相等'], concept: '认识正方形的特征：四条边都相等，四个角都是直角', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p1-49'] },
@@ -113,7 +113,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-10', title: '20以内的退位减法', icon: '➖',
+        id: 'ch1-10', title: '20以内的退位减法', icon: '➖', semester: '下册',
         points: [
           { id: 'p1-55', name: '十几减9', difficulty: 1, keywords: ['十几减9', '退位减', '破十法'], concept: '掌握十几减9的计算方法，学会用"破十法""想加算减法"计算', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p1-56'] },
           { id: 'p1-56', name: '十几减8', difficulty: 1, keywords: ['十几减8', '退位减', '破十法'], concept: '掌握十几减8的计算方法，能正确口算', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p1-57'] },
@@ -124,7 +124,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-11', title: '分类与整理', icon: '📊',
+        id: 'ch1-11', title: '分类与整理', icon: '📊', semester: '下册',
         points: [
           { id: 'p1-61', name: '按给定标准分类', difficulty: 1, keywords: ['分类', '标准', '归类'], concept: '能按照给定的标准对物体进行分类，体会分类的意义', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p1-62'] },
           { id: 'p1-62', name: '自选标准分类', difficulty: 1, keywords: ['自选标准', '分类方法', '不同标准'], concept: '能自选标准进行分类，理解不同标准下分类结果可能不同', questionTypes: ['选择', '判断'], relatedPoints: ['p1-61'] },
@@ -135,7 +135,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch1-12', title: '100以内数的认识', icon: '💯',
+        id: 'ch1-12', title: '100以内数的认识', icon: '💯', semester: '下册',
         points: [
           { id: 'p1-67', name: '数数', difficulty: 1, keywords: ['数数', '一个一个数', '十个十个数'], concept: '学会一个一个地数、十个十个地数，能数到100', questionTypes: ['填空', '选择'], relatedPoints: ['p1-68'] },
           { id: 'p1-68', name: '100以内数的组成', difficulty: 1, keywords: ['十位', '个位', '组成'], concept: '理解100以内数的组成，知道几个十和几个一组成几十几', questionTypes: ['填空', '选择', '判断'], relatedPoints: ['p1-69'] },
@@ -191,7 +191,7 @@ export const mathKnowledge = {
     chapters: [
       // ===== 二年级上册 =====
       {
-        id: 'ch2-1', title: '长度单位', icon: '📏',
+        id: 'ch2-1', title: '长度单位', icon: '📏', semester: '上册',
         points: [
           { id: 'p2-1', name: '认识厘米', difficulty: 1, keywords: ['厘米', 'cm', '长度单位'], concept: '认识长度单位厘米，知道1厘米有多长，建立1厘米的长度观念', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p2-2'] },
           { id: 'p2-2', name: '认识米', difficulty: 1, keywords: ['米', 'm', '长度单位'], concept: '认识长度单位米，知道1米有多长，建立1米的长度观念', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p2-1'] },
@@ -202,7 +202,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch2-2', title: '100以内的加减法（二）', icon: '➕',
+        id: 'ch2-2', title: '100以内的加减法（二）', icon: '➕', semester: '上册',
         points: [
           { id: 'p2-7', name: '两位数加两位数不进位', difficulty: 1, keywords: ['不进位', '笔算', '竖式'], concept: '掌握两位数加两位数（不进位）的笔算方法，理解相同数位对齐', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p2-8'] },
           { id: 'p2-8', name: '两位数加两位数进位', difficulty: 2, keywords: ['进位', '笔算', '竖式', '满十进一'], concept: '掌握两位数加两位数（进位）的笔算方法，个位满十向十位进一', questionTypes: ['计算', '填空', '选择'], relatedPoints: ['p2-7'] },
@@ -213,7 +213,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch2-3', title: '角的初步认识', icon: '📐',
+        id: 'ch2-3', title: '角的初步认识', icon: '📐', semester: '上册',
         points: [
           { id: 'p2-13', name: '认识角', difficulty: 1, keywords: ['角', '顶点', '边'], concept: '初步认识角，知道角有一个顶点和两条边', questionTypes: ['选择', '判断', '填空'], relatedPoints: ['p2-14'] },
           { id: 'p2-14', name: '角的各部分名称', difficulty: 1, keywords: ['顶点', '边', '角的组成'], concept: '认识角的各部分名称：一个顶点、两条边', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p2-13'] },
@@ -224,7 +224,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch2-4', title: '表内乘法（一）', icon: '✖️',
+        id: 'ch2-4', title: '表内乘法（一）', icon: '✖️', semester: '上册',
         points: [
           { id: 'p2-19', name: '乘法的初步认识', difficulty: 1, keywords: ['乘法', '相同加数', '乘号'], concept: '理解乘法的含义：求几个相同加数的和可以用乘法计算', questionTypes: ['选择', '填空', '判断'], relatedPoints: ['p2-20'] },
           { id: 'p2-20', name: '乘法算式的读写', difficulty: 1, keywords: ['读法', '写法', '乘法算式'], concept: '学会乘法算式的读法和写法，认识乘号和乘法算式各部分名称', questionTypes: ['填空', '选择', '判断'], relatedPoints: ['p2-19'] },
@@ -235,7 +235,7 @@ export const mathKnowledge = {
         ]
       },
       {
-        id: 'ch2-5', title: '观察物体（一）', icon: '👀',
+        id: 'ch2-5', title: '观察物体（一）', icon: '👀', semester: '上册',
         points: [
           { id: 'p2-25', name: '从前面看', difficulty: 1, keywords: ['前面', '正面', '观察'], concept: '学会从前面（正面）观察物体，画出看到的形状', questionTypes: ['选择', '判断', '连线'], relatedPoints: ['p2-26'] },
           { id: 'p2-26', name: '从侧面看', difficulty: 1, keywords: ['侧面', '左面', '右面'], concept: '学会从侧面观察物体，能辨认从左面和右面看到的形状', questionTypes: ['选择', '判断', '连线'], relatedPoints: ['p2-27'] },

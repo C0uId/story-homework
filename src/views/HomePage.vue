@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { knowledgeMap } from '../data/knowledgeMap'
+import { knowledgeMap, getChapterSemester } from '../data/knowledgeMap'
 import { THEMES } from '../data/themes'
 import { getAllChapterProgress, getChaptersForReview } from '../utils/learningProgress'
 import { hasCharacter, getCharacter, getCultivationInfo, getCharacterTalents, getPersonality } from '../utils/characterSystem'
@@ -268,7 +268,10 @@ function goToRecommendation() {
           <div v-for="chapter in gradeChapters" :key="chapter.id" class="chapter-card" @click="selectChapter(chapter)">
             <div class="chapter-num">{{ chapter.id?.split('-').pop() || '?' }}</div>
             <div class="chapter-info">
-              <span class="chapter-title">{{ chapter.title || chapter.name }}</span>
+              <span class="chapter-title">
+                {{ chapter.title || chapter.name }}
+                <span class="chapter-semester">{{ getChapterSemester(selectedSubject, chapter.id, selectedGrade) }}</span>
+              </span>
               <span class="chapter-desc">{{ chapter.description || chapter.desc || '' }}</span>
             </div>
             <span class="chapter-start">开始 →</span>
@@ -508,6 +511,12 @@ function goToRecommendation() {
 }
 .chapter-info { flex: 1; text-align: left; min-width: 0; }
 .chapter-title { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+.chapter-semester {
+  font-size: 11px; font-weight: 500;
+  color: white; background: var(--coral);
+  padding: 1px 8px; border-radius: 8px;
+  margin-left: 8px; vertical-align: middle;
+}
 .chapter-desc { display: block; font-size: 12px; color: var(--text3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chapter-start { font-size: 13px; color: var(--coral); font-weight: 600; flex-shrink: 0; white-space: nowrap; }
 

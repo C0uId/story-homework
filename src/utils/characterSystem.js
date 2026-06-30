@@ -186,6 +186,41 @@ export const PERSONALITY_QUESTIONS = [
       { text: '先把基础打好，循序渐进', trait: 'thorough', icon: '📚' },
     ]
   },
+  {
+    scene: '放学后，你有一段自由时间，你会做些什么？',
+    options: [
+      { text: '按计划完成作业和复习', trait: 'cautious', icon: '🛡️' },
+      { text: '尝试一条从未走过的路回家探索', trait: 'adventurous', icon: '⚔️' },
+    ]
+  },
+  {
+    scene: '你的好朋友要转学了，你会怎么做？',
+    options: [
+      { text: '经常给他写信，关心他的新生活', trait: 'empathetic', icon: '💛' },
+      { text: '在班级里结识更多新朋友', trait: 'independent', icon: '🦅' },
+    ]
+  },
+  {
+    scene: '学习一个很难的新概念时，你更倾向于？',
+    options: [
+      { text: '反复阅读和练习，直到完全理解', trait: 'persistent', icon: '💪' },
+      { text: '找不同的学习资料，从各种角度理解', trait: 'strategic', icon: '♟️' },
+    ]
+  },
+  {
+    scene: '周末早上醒来，你更希望怎样度过？',
+    options: [
+      { text: '先列好整天的安排再开始行动', trait: 'structured', icon: '📖' },
+      { text: '随心所欲，根据心情决定做什么', trait: 'exploratory', icon: '🔬' },
+    ]
+  },
+  {
+    scene: '看到同学在某个方面比你做得好，你的第一反应是？',
+    options: [
+      { text: '暗暗下决心要努力超过他', trait: 'ambitious', icon: '🚀' },
+      { text: '虚心地向他请教学习的方法', trait: 'thorough', icon: '📚' },
+    ]
+  },
 ]
 
 // 性格特征描述
@@ -201,6 +236,15 @@ const TRAIT_DESCRIPTIONS = {
   ambitious:     { name: '上进', icon: '🚀', desc: '追求进步，渴望突破自我', positive: '积极进取' },
   thorough:      { name: '扎实', icon: '📚', desc: '注重基础，稳扎稳打', positive: '基础牢固' },
 }
+
+// 性格特质配对（AI 故事生成性格时刻用）
+export const TRAIT_PAIRS = [
+  { a: 'cautious', b: 'adventurous', label: '谨慎↔冒险' },
+  { a: 'empathetic', b: 'independent', label: '共情↔独立' },
+  { a: 'persistent', b: 'strategic', label: '坚持↔策略' },
+  { a: 'structured', b: 'exploratory', label: '有序↔探索' },
+  { a: 'ambitious', b: 'thorough', label: '上进↔扎实' },
+]
 
 // ========== 经验值计算 ==========
 export const EXP_VALUES = {
@@ -274,6 +318,7 @@ export function createCharacter(name, initialTalentId = null) {
       questionsAnswered: 0,
       totalQuestions: PERSONALITY_QUESTIONS.length,
       isComplete: false,
+      answeredIndices: [], // 已直接作答的题目索引（用于家长中心顺序答题）
     },
 
     // 学科熟练度（用于难度调整）
@@ -592,9 +637,18 @@ export function submitPersonalityChoice(questionIndex, optionIndex) {
   const option = question.options[optionIndex]
   if (!option) return null
 
+  // 避免重复作答同一道题
+  if (char.personality.answeredIndices?.includes(questionIndex)) {
+    return { trait: option.trait, isComplete: char.personality.isComplete, alreadyAnswered: true }
+  }
+
   // 记录选择
   char.personality.traits[option.trait] = (char.personality.traits[option.trait] || 0) + 1
   char.personality.questionsAnswered++
+
+  // 记录已作答的题目索引
+  if (!char.personality.answeredIndices) char.personality.answeredIndices = []
+  char.personality.answeredIndices.push(questionIndex)
 
   // 检查是否完成探测
   if (char.personality.questionsAnswered >= PERSONALITY_QUESTIONS.length) {
@@ -658,7 +712,7 @@ export function submitStoryPersonalityChoice(trait) {
   char.personality.questionsAnswered++
 
   // 检查是否完成探测（累计答够题数即可完成）
-  const totalNeeded = 5 // 故事中累计答对5道性格题即可完成性格探测
+  const totalNeeded = 20 // 故事中累计答对20道性格题即可完成性格探测
   if (char.personality.questionsAnswered >= totalNeeded && !char.personality.isComplete) {
     char.personality.isComplete = true
     const sorted = Object.entries(char.personality.traits).sort((a, b) => b[1] - a[1])

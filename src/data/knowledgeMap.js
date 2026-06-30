@@ -29,3 +29,46 @@ export const knowledgeMap = {
     { id: '6', name: '六年级', age: '11-12岁' }
   ]
 }
+
+/**
+ * 获取章节的上下册信息
+ * @param {string} subjectId - 学科id (math/chinese/english/science/history)
+ * @param {string} chapterId - 章节id (如 ch1-1, chs2-3, chh3-5)
+ * @param {number} grade - 年级 (1-6)
+ * @returns {string} '上册' 或 '下册'
+ *
+ * 已有 semester 字段的章节优先使用该字段，否则自动推断
+ */
+export function getChapterSemester(subjectId, chapterId, grade) {
+  // 如果章节对象已有 semester 字段，直接使用
+  const subjectData = knowledgeMap[subjectId]
+  const gradeData = subjectData?.[grade]
+  if (gradeData?.chapters) {
+    const ch = gradeData.chapters.find(c => c.id === chapterId)
+    if (ch?.semester) return ch.semester
+  }
+
+  // 没有 semester 字段则自动推断
+  // 科学(教科版): 每年级8章，前4章上册，后4章下册
+  if (subjectId === 'science') {
+    const num = parseInt(chapterId.replace('chs', '').split('-')[1])
+    return num <= 4 ? '上册' : '下册'
+  }
+  // 历史: 每年级8章，前4章上册，后4章下册
+  if (subjectId === 'history') {
+    const num = parseInt(chapterId.replace('chh', '').split('-')[1])
+    return num <= 4 ? '上册' : '下册'
+  }
+  // 数学: 每年级章数不同，根据内置知识推断
+  if (subjectId === 'math') {
+    const num = parseInt(chapterId.replace('ch', '').split('-')[1])
+    const boundaries = {
+      '1': 8, '2': 6, '3': 9, '4': 8, '5': 7, '6': 8
+    }
+    const boundary = boundaries[grade]
+    return num <= boundary ? '上册' : '下册'
+  }
+  // 语文/英语已在数据中自带 semester 字段
+  // 兜底
+  return '上册'
+}

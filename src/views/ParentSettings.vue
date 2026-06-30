@@ -2,6 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { THEMES } from '../data/themes'
+import {
+  hasCharacter,
+  getCharacter,
+  getPersonality,
+  getAllTraitDescriptions,
+  PERSONALITY_QUESTIONS
+} from '../utils/characterSystem'
 
 const router = useRouter()
 
@@ -64,6 +71,49 @@ function goHome() {
   saveSettings()
   router.push('/')
 }
+
+// ========== 性格评估系统 ==========
+// 强制刷新 key — 每次答题后递增，触发 computed 重新计算
+const reloadKey = ref(0)
+function forceReload() { reloadKey.value++ }
+
+const hasChar = computed(() => { reloadKey.value; return hasCharacter() })
+const character = computed(() => { reloadKey.value; return getCharacter() })
+const personality = computed(() => { reloadKey.value; return getPersonality() })
+const allTraits = getAllTraitDescriptions()
+
+// 题目总数
+const totalQuestions = PERSONALITY_QUESTIONS.length
+
+// 已作答题目数（包括故事中埋入的）
+const answeredCount = computed(() => personality.value?.progress || 0)
+const isComplete = computed(() => personality.value?.isComplete || false)
+const personalityProgress = computed(() =>
+  Math.round((answeredCount.value / totalQuestions) * 100)
+)
+
+// 剩余的题目数量
+const remainingCount = computed(() => totalQuestions - answeredCount.value)
+
+// 已探测到的性格特征（带详细描述）
+const detectedTraits = computed(() => {
+  if (!personality.value?.detected) return []
+  return personality.value.detected
+})
+
+// 所有性格特征的得分排名
+const traitScores = computed(() => {
+  const p = personality.value
+  if (!p) return []
+  const all = getAllTraitDescriptions()
+  return Object.entries(p.traits || {})
+    .map(([key, count]) => ({
+      key,
+      ...all[key],
+      count
+    }))
+    .sort((a, b) => b.count - a.count)
+})
 </script>
 
 <template>
@@ -208,6 +258,82 @@ function goHome() {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- ========== 性格评估板块 ========== -->
+      <div class="setting-group card" v-if="hasChar">
+        <h3 class="group-title">
+          <span class="group-icon">🧠</span>
+          性格探测报告
+        </h3>
+        <p class="group-desc">孩子在故事学习过程中做出的选择，会自然地反映出性格倾向</p>
+
+        <!-- 状态 1：已完成 — 显示性格报告 -->
+        <div v-if="isComplete" class="personality-report">
+          <div class="report-header">
+            <span class="report-badge">🎉 性格探测完成</span>
+            <p class="report-desc">
+              以下是 <strong>{{ character?.name }}</strong> 的性格画像，
+              基于 {{ totalQuestions }} 道故事中的选择分析结果
+            </p>
+          </div>
+
+          <!-- TOP3 性格特征 -->
+          <div class="trait-cards">
+            <div
+              v-for="(trait, idx) in detectedTraits"
+              :key="trait.name"
+              class="trait-card"
+              :class="'trait-rank-' + (idx + 1)"
+            >
+              <div class="trait-rank">
+                <span class="trait-rank-num">{{ idx + 1 }}</span>
+              </div>
+              <span class="trait-icon-large">{{ trait.icon }}</span>
+              <div class="trait-content">
+                <h4 class="trait-name">{{ trait.name }}</h4>
+                <p class="trait-desc">{{ trait.desc }}</p>
+                <span class="trait-positive">✨ {{ trait.positive }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 学习建议 -->
+          <div class="report-suggestion">
+            <h4>📝 给家长的建议</h4>
+            <p>孩子的性格特点会在故事学习中自然展现。了解孩子的性格倾向后，可以针对性地选择适合的学习方式：</p>
+            <ul>
+              <li v-for="trait in detectedTraits" :key="trait.name">
+                <strong>{{ trait.icon }} {{ trait.name }}型</strong> — {{ trait.positive }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 状态 2：未完成 — 显示故事中的进度 -->
+        <div v-else class="personality-incomplete">
+          <div class="incomplete-banner">
+            <span class="incomplete-icon">📖</span>
+            <div class="incomplete-info">
+              <h4>正在积累性格数据</h4>
+              <p>孩子在故事学习中已完成 <strong>{{ answeredCount }}</strong> / {{ totalQuestions }} 次性格选择，还差 <strong>{{ remainingCount }}</strong> 次</p>
+            </div>
+          </div>
+          <div class="progress-bar personality-progress">
+            <div class="progress-fill personality-fill" :style="{ width: personalityProgress + '%' }"></div>
+            <div class="progress-text">{{ answeredCount }}/{{ totalQuestions }}</div>
+          </div>
+          <p class="incomplete-hint">💡 继续让孩子在知识剧场中学习，每章故事都会遇到性格选择，完成后自动生成报告</p>
+        </div>
+      </div>
+
+      <!-- 未创建角色时的提示 -->
+      <div class="setting-group card" v-else>
+        <h3 class="group-title">
+          <span class="group-icon">🧠</span>
+          性格探测报告
+        </h3>
+        <p class="group-desc">请先在首页创建角色，才能进行性格探测</p>
       </div>
 
       <!-- 保存按钮 -->
@@ -479,6 +605,218 @@ function goHome() {
 }
 .toggle-btn.on .toggle-dot {
   transform: translateX(20px);
+}
+
+/* ========== 性格评估样式 ========== */
+
+/* Progress Bar (共用) */
+.progress-bar {
+  height: 6px;
+  background: #F0E8F0;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+.personality-progress { margin-bottom: 12px; position: relative; }
+.personality-fill {
+  background: linear-gradient(90deg, #A78BFA, #7C3AED);
+}
+.progress-text {
+  position: absolute;
+  right: 0;
+  top: -20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple);
+}
+
+/* 未完成 — 入口 */
+.personality-incomplete {
+  text-align: center;
+}
+.incomplete-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: #F3E8FF;
+  border-radius: 16px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+.incomplete-icon { font-size: 32px; flex-shrink: 0; }
+.incomplete-info h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.incomplete-info p {
+  font-size: 13px;
+  color: var(--text2);
+}
+.incomplete-info strong { color: var(--coral); }
+.incomplete-hint {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 8px;
+}
+
+/* 性格报告 */
+.personality-report {
+  animation: fadeInUp 0.4s ease;
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.report-badge {
+  display: inline-block;
+  padding: 6px 18px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #A78BFA, #7C3AED);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.report-desc {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.report-desc strong { color: var(--text); }
+
+/* TOP3 特征卡片 */
+.trait-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.trait-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  position: relative;
+  transition: all 0.3s;
+}
+.trait-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+.trait-rank-1 {
+  background: linear-gradient(135deg, #FFF8E1, #FFE082);
+  border: 2px solid #FFB300;
+}
+.trait-rank-2 {
+  background: linear-gradient(135deg, #F3E8FF, #E1BEE7);
+  border: 2px solid #AB47BC;
+}
+.trait-rank-3 {
+  background: linear-gradient(135deg, #E8F5E9, #A5D6A7);
+  border: 2px solid #66BB6A;
+}
+
+.trait-rank {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.trait-rank-1 .trait-rank { background: #FFB300; }
+.trait-rank-2 .trait-rank { background: #AB47BC; }
+.trait-rank-3 .trait-rank { background: #66BB6A; }
+
+.trait-rank-num {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.trait-icon-large {
+  font-size: 40px;
+  flex-shrink: 0;
+}
+
+.trait-content { flex: 1; min-width: 0; }
+.trait-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.trait-desc {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+.trait-positive {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--purple);
+}
+
+/* 学习建议 */
+.report-suggestion {
+  padding: 20px 24px;
+  background: #FFF8F0;
+  border: 2px solid #FFE0B2;
+  border-radius: 16px;
+}
+.report-suggestion h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.report-suggestion p {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.report-suggestion ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.report-suggestion li {
+  font-size: 13px;
+  color: var(--text2);
+  padding: 6px 0;
+  line-height: 1.5;
+  border-bottom: 1px solid #F0E8F0;
+}
+.report-suggestion li:last-child { border-bottom: none; }
+.report-suggestion li strong { color: var(--text); }
+
+/* ========== 动画 ========== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Save */

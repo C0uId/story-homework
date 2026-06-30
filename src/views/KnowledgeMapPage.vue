@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { knowledgeMap } from '../data/knowledgeMap'
+import { knowledgeMap, getChapterSemester } from '../data/knowledgeMap'
 
 const route = useRoute()
 const router = useRouter()
@@ -87,7 +87,7 @@ const progress = computed(() => totalPoints.value > 0 ? (completedCount.value / 
             <div class="chapter-top">
               <span class="chapter-emoji">{{ chapter.icon }}</span>
               <div>
-                <h3>第{{ chIdx + 1 }}章 · {{ chapter.title }}</h3>
+                <h3>第{{ chIdx + 1 }}章 · {{ chapter.title }} <span class="semester-badge">{{ getChapterSemester(subject, chapter.id, grade) }}</span></h3>
                 <p class="chapter-sub">{{ chapter.points.length }} 个知识点</p>
               </div>
             </div>
@@ -149,6 +149,12 @@ const progress = computed(() => totalPoints.value > 0 ? (completedCount.value / 
 .chapter-emoji { font-size: 32px; }
 .chapter-top h3 { font-size: 17px; font-weight: 700; color: var(--text); }
 .chapter-sub { font-size: 12px; color: var(--text3); }
+.semester-badge {
+  font-size: 10px; font-weight: 500;
+  color: white; background: var(--coral);
+  padding: 1px 6px; border-radius: 6px;
+  margin-left: 6px; vertical-align: middle;
+}
 
 .point-list { display: flex; flex-direction: column; gap: 8px; }
 .point-item {

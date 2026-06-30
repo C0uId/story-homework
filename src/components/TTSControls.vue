@@ -8,35 +8,82 @@
         {{ ttsPaused ? '▶️' : '⏸️' }}
       </button>
       <button class="tts-btn-sm" @click="$emit('stopTTS')" :disabled="!ttsSpeaking" title="停止朗读">⏹️</button>
-      <button class="tts-btn-sm" @click="$emit('update:showTTSSettings', !showTTSSettings)" title="语速设置">⚙️</button>
+      <button class="tts-btn-sm" @click="toggleSettingsPanel" title="语速设置">⚙️</button>
     </template>
     <!-- TTS设置面板 -->
-    <div class="tts-settings-panel" v-if="showTTSSettings && ttsEnabled">
+    <div class="tts-settings-panel" v-if="showPanel && ttsEnabled">
       <div class="tts-setting-row">
         <span class="tts-label">语速</span>
         <input type="range" min="0.5" max="1.5" step="0.1" :value="ttsRate" @input="$emit('changeRate', parseFloat($event.target.value))" class="tts-slider" />
         <span class="tts-value">{{ ttsRate }}x</span>
+      </div>
+      <div class="tts-setting-row" v-if="voices.length > 0">
+        <span class="tts-label">声音</span>
+        <select class="tts-select" :value="ttsVoiceName" @change="$emit('changeVoice', $event.target.value)">
+          <option value="">默认</option>
+          <option v-for="v in voices" :key="v.name" :value="v.name">{{ v.name }}</option>
+        </select>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+import { getChineseVoices } from '../utils/tts'
+
 defineProps({
   ttsEnabled: { type: Boolean, default: false },
   ttsSpeaking: { type: Boolean, default: false },
   ttsPaused: { type: Boolean, default: false },
-  showTTSSettings: { type: Boolean, default: false },
-  ttsRate: { type: Number, default: 1.0 }
+  ttsRate: { type: Number, default: 1.0 },
+  ttsVoiceName: { type: String, default: '' }
 })
 
 defineEmits([
   'toggleTTS',
   'togglePause',
   'stopTTS',
-  'update:showTTSSettings',
-  'changeRate'
+  'changeRate',
+  'changeVoice'
 ])
+
+const showPanel = ref(false)
+const voices = ref([])
+
+function toggleSettingsPanel() {
+  showPanel.value = !showPanel.value
+  if (showPanel.value) {
+    loadVoices()
+  }
+  // 点击其他地方关闭面板
+  if (showPanel.value) {
+    setTimeout(() => {
+      document.addEventListener('click', closePanelOutside, { once: true })
+    }, 0)
+  }
+}
+
+function closePanelOutside(e) {
+  if (!e.target.closest('.tts-float')) {
+    showPanel.value = false
+  }
+}
+
+function loadVoices() {
+  voices.value = getChineseVoices()
+  if (voices.value.length === 0 && window.speechSynthesis) {
+    window.speechSynthesis.getVoices()
+    setTimeout(() => { voices.value = getChineseVoices() }, 500)
+  }
+}
+
+onMounted(() => {
+  loadVoices()
+  if (window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = () => { voices.value = getChineseVoices() }
+  }
+})
 </script>
 
 <style scoped>
@@ -85,12 +132,19 @@ defineEmits([
   border-radius: 16px;
   padding: 16px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  min-width: 180px;
+  min-width: 220px;
   animation: popIn 0.2s ease;
 }
-.tts-setting-row { display: flex; align-items: center; gap: 8px; }
-.tts-label { font-size: 13px; color: var(--text2); min-width: 30px; }
+.tts-setting-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.tts-label { font-size: 13px; color: var(--text2); min-width: 30px; white-space: nowrap; }
 .tts-slider { flex: 1; accent-color: #7c3aed; }
+.tts-select {
+  flex: 1; padding: 4px 8px; font-size: 12px;
+  border: 1px solid #E8E0F0; border-radius: 8px;
+  background: #fff; color: var(--text2); cursor: pointer;
+  outline: none; max-width: 150px;
+}
+.tts-select:focus { border-color: #7c3aed; }
 .tts-value { font-size: 12px; color: var(--text3); min-width: 30px; text-align: right; }
 
 @keyframes popIn {

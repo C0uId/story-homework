@@ -189,6 +189,31 @@ export function generateStoryPrompt(params) {
 8. 每个剧集需要有一个具体的**场景描述**（一句话，描述故事发生的画面）
 9. 每幕至少包含一个**幽默元素**，保持趣味性
 10. 每个 question 必须包含 **hint 字段**（30字以内的提示，帮助学生思考）
+11. **⚠️ 最关键：每个关卡幕（challenge）的 questions 数组必须包含至少2道题目！** 这样学生能通过多个角度巩固同一个知识点
+12. **性格时刻（可选）**：在关卡幕中可以加入一个与剧情自然融合的性格抉择 moment，格式见下方
+
+## 性格时刻（可选）
+在每个关卡幕中，可以加入一个性格抉择 moment，让角色在剧情中做出自然选择。
+
+性格抉择的格式（嵌入到对应 episode 中）：
+\`\`\`json
+"personalityMoment": {
+  "narrative": "结合当前剧情的抉择描述（20-40字）",
+  "options": [
+    { "text": "选项A（2-6字）", "trait": "对应的性格特质ID" },
+    { "text": "选项B（2-6字）", "trait": "对应的性格特质ID" }
+  ]
+}
+\`\`\`
+
+性格特质配对（每次选一对，二选一）：
+- cautious(谨慎) ↔ adventurous(冒险)：安稳 vs 冒险
+- empathetic(共情) ↔ independent(独立)：关心他人 vs 独立完成
+- persistent(坚持) ↔ strategic(策略)：硬碰硬 vs 巧办法
+- structured(有序) ↔ exploratory(探索)：按部就班 vs 自由探索
+- ambitious(上进) ↔ thorough(扎实)：挑战高难度 vs 打好基础
+
+⚠️ 性格时刻必须在剧情中自然呈现，不能生硬插入。让选择看起来是故事的一部分。
 
 ## 输出格式
 请严格按以下 JSON 格式输出，不要输出其他内容：
@@ -214,9 +239,23 @@ export function generateStoryPrompt(params) {
       "narrative": "[80-120字的关卡铺垫]",
       "knowledge": "[知识点名称]",
       "scene": "[场景描述]",
+      "personalityMoment": {
+        "narrative": "自然融入剧情的抉择（20-40字）, 可选",
+        "options": [
+          { "text": "选项A", "trait": "cautious" },
+          { "text": "选项B", "trait": "adventurous" }
+        ]
+      },
       "questions": [
         {
-          "text": "[题目文本]",
+          "text": "[第一道题目文本]",
+          "options": ["选项A", "选项B", "选项C", "选项D"],
+          "correct": [正确选项索引],
+          "explanation": "[答对后故事继续，30字以内]",
+          "hint": "[30字以内的提示]"
+        },
+        {
+          "text": "[第二道题目文本，从不同角度考查同一个知识点]",
           "options": ["选项A", "选项B", "选项C", "选项D"],
           "correct": [正确选项索引],
           "explanation": "[答对后故事继续，30字以内]",

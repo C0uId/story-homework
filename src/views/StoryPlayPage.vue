@@ -13,20 +13,22 @@ const {
   storyData, currentEpisodeIndex, showQuestion, selectedAnswer, answerResult,
   completedEpisodes, typingText, isTyping, currentQuestionIndex,
   personalityResult, showPersonalityInsight,
+  showInjectedPersonality, injectedPersonalityData,
   showRecap, recapText, showChapterComplete,
   showReviewRecap, reviewRecapText,
   characterUnlocks,
   showWrongPath, wrongPathText, isWrongTyping,
   isAIGenerating, aiGenerateProgress, streamingText, nextBatchLoading, nextBatchProgress, characterName,
-  ttsEnabled, ttsSpeaking, ttsPaused, showTTSSettings, ttsRate,
+  ttsEnabled, ttsSpeaking, ttsPaused, showTTSSettings, ttsRate, ttsVoiceName,
   ts, currentEpisode, totalEpisodes, progress,
   currentQuestions, currentQuestion, isLastQuestion, isReviewEpisode, isPersonalityQuestion,
   gradeInfo, subjectInfo, chapterRecapSummary, nextReviewDisplay, hasNextChapter,
   handleShowQuestion, selectAnswer, selectPersonalityChoice, handleNextQuestion,
+  handleInjectedPersonalityChoice, continueAfterPersonality,
   nextEpisode, dismissRecap, dismissReviewRecap, continueFromWrongPath,
   jumpToEpisode, finishStory, goHome, retryAIGeneration, goNextChapter,
-  toggleTTS, toggleTTSPause, stopTTS, changeTTSRate,
-  comboCount, wrongAttempts, showHint, currentHint,
+  toggleTTS, toggleTTSPause, stopTTS, changeTTSRate, changeTTSVoice,
+    comboCount, wrongAttempts, showHint, currentHint,
   explorationGained, showExplorationAnim, showComboAnim,
   correctAnimKey, wrongAnimKey, useHintRetry,
 } = useStoryPlayer({
@@ -217,6 +219,43 @@ const {
           @continue="continueFromWrongPath"
         />
 
+        <!-- ✨ 故事注入的性格探测（挑战前展示） -->
+        <div v-if="showInjectedPersonality" class="personality-injected">
+          <div class="pi-card">
+            <div class="pi-header">
+              <span class="pi-icon">🧠</span>
+              <span class="pi-label">性格探索 · 在故事中做出你的选择</span>
+            </div>
+            <div class="pi-scene" v-if="injectedPersonalityData">
+              <p>{{ injectedPersonalityData.scene }}</p>
+            </div>
+            <div class="pi-options">
+              <div
+                v-for="(opt, oi) in injectedPersonalityData?.options"
+                :key="oi"
+                class="pi-option"
+                :class="{ selected: showPersonalityInsight }"
+                @click="handleInjectedPersonalityChoice(oi)"
+              >
+                <span class="pi-opt-icon">{{ opt.icon }}</span>
+                <span class="pi-opt-text">{{ opt.text }}</span>
+              </div>
+            </div>
+
+            <!-- 性格洞察 -->
+            <div v-if="showPersonalityInsight && personalityResult" class="pi-insight">
+              <div class="pi-insight-icon">{{ personalityResult?.traitInfo?.icon || '✨' }}</div>
+              <div class="pi-insight-content">
+                <strong>{{ personalityResult?.traitInfo?.name || '' }}</strong>
+                <p>{{ personalityResult?.traitInfo?.desc || '' }}</p>
+              </div>
+              <button class="btn btn-coral pi-continue-btn" @click="continueAfterPersonality">
+                继续挑战 →
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Quiz -->
         <QuizPanel
           v-if="showQuestion && currentQuestion"
@@ -342,13 +381,13 @@ const {
       :tts-enabled="ttsEnabled"
       :tts-speaking="ttsSpeaking"
       :tts-paused="ttsPaused"
-      :show-tts-settings="showTTSSettings"
       :tts-rate="ttsRate"
+      :tts-voice-name="ttsVoiceName"
       @toggle-t-t-s="toggleTTS"
       @toggle-pause="toggleTTSPause"
       @stop-t-t-s="stopTTS"
-      @update:show-t-t-s-settings="showTTSSettings = $event"
       @change-rate="changeTTSRate"
+      @change-voice="changeTTSVoice"
     />
   </div>
 </template>
@@ -585,6 +624,110 @@ const {
   background: linear-gradient(135deg, #F59E0B, #D97706);
   color: #fff; border: none; border-radius: 12px; cursor: pointer;
 }
+
+/* ===== 故事注入的性格探测 ===== */
+.personality-injected {
+  max-width: 500px;
+  margin: 0 auto 24px;
+  animation: popIn 0.3s ease;
+}
+.pi-card {
+  background: linear-gradient(135deg, #F3E8FF, #FFF8F0);
+  border: 2px solid #D8B4FE;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(139,92,246,0.08);
+}
+.pi-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E8E0F0;
+}
+.pi-icon { font-size: 22px; }
+.pi-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--purple);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pi-scene {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+.pi-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pi-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #FFF8F0;
+  border: 2px solid #E8E0F0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pi-option:hover {
+  border-color: var(--purple);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139,92,246,0.1);
+}
+.pi-option.selected {
+  border-color: var(--purple);
+  background: #F3E8FF;
+  pointer-events: none;
+}
+.pi-opt-icon { font-size: 26px; flex-shrink: 0; }
+.pi-opt-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+.pi-insight {
+  margin-top: 16px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #ECFDF5, #F0FDF4);
+  border: 1.5px solid #A7F3D0;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  animation: popIn 0.3s ease;
+}
+.pi-insight-icon { font-size: 28px; flex-shrink: 0; }
+.pi-insight-content { flex: 1; min-width: 0; }
+.pi-insight-content strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+  margin-bottom: 2px;
+}
+.pi-insight-content p {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.pi-continue-btn {
+  flex: 0 0 auto;
+  font-size: 13px;
+  padding: 8px 20px;
+  border-radius: 12px;
+}
+.pi-insight + .pi-continue-btn { margin-top: 8px; }
 
 /* ===== Responsive ===== */
 @media (max-width: 640px) {

@@ -15,7 +15,7 @@ function getSettings() {
     const raw = localStorage.getItem(TTS_SETTINGS_KEY)
     if (raw) return JSON.parse(raw)
   } catch {}
-  return { enabled: true, rate: 0.9, pitch: 1.0, volume: 1.0, voiceName: '' }
+  return { enabled: true, rate: 0.9, pitch: 1.0, volume: 1.0, voiceName: 'Microsoft Xiaoyi Online (Natural) - Chinese (Mainland)' }
 }
 
 /**

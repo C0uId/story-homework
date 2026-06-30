@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { knowledgeMap } from '../data/knowledgeMap'
+import { knowledgeMap, getChapterSemester } from '../data/knowledgeMap'
 import {
   getAllProgress,
   getOverallStats,
@@ -11,30 +11,125 @@ import {
   getAllChapterProgress,
   getChaptersForReview,
   getReviewStageName,
+  getEnhancedOverallStats,
+  getTodayStats,
+  getSubjectDistribution,
+  getCalendarHeatmapData,
+  getWeeklyStats,
+  exportAllData,
+  importAllData,
+  resetAllData,
 } from '../utils/learningProgress'
 
 const router = useRouter()
 
 // Reactive data
 const stats = ref({ totalLearned: 0, avgMastery: 0, streak: 0, totalAttempts: 0, totalCorrect: 0, accuracy: 0, estimatedMinutes: 0 })
+const enhancedStats = ref(null)
+const todayStats = ref({ duration: 0, answers: 0, correct: 0, episodes: 0, accuracy: 0, minutes: 0 })
+const weeklyStats = ref({ totalDuration: 0, totalAnswers: 0, totalCorrect: 0, totalEpisodes: 0, activeDays: 0, accuracy: 0 })
+const subjectDistribution = ref([])
+const calendarData = ref({})
 const dueReviews = ref([])
 const upcomingReviews = ref([])
 const allProgress = ref([])
 const showResetConfirm = ref(false)
 const chapterProgressRecords = ref([])
 const chapterDueReviews = ref([])
+const showExportSuccess = ref(false)
+const importFileInput = ref(null)
+const showImportConfirm = ref(false)
+const importFile = ref(null)
+const loading = ref(true)
 
-onMounted(() => {
-  refreshData()
+// 日历热力图配置
+const calendarDays = computed(() => {
+  const days = []
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const totalDays = 91 // 13 weeks * 7 days
+
+  for (let i = totalDays - 1; i >= 0; i--) {
+    const dayDate = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+    const dayStr = dayDate.toISOString().slice(0, 10)
+    const dayData = calendarData.value[dayStr]
+
+    let level = 0
+    if (dayData) {
+      const mins = dayData.duration / 60000
+      if (mins > 30) level = 4
+      else if (mins > 20) level = 3
+      else if (mins > 10) level = 2
+      else if (mins > 0) level = 1
+    }
+
+    days.push({
+      date: dayStr,
+      day: dayDate.getDate(),
+      month: dayDate.getMonth(),
+      level,
+      isToday: i === 0,
+      minutes: dayData ? Math.round(dayData.duration / 60000) : 0,
+    })
+  }
+  return days
 })
 
-function refreshData() {
+// 按周分组的日历数据
+const calendarWeeks = computed(() => {
+  const weeks = []
+  let currentWeek = []
+
+  for (const day of calendarDays.value) {
+    const dow = new Date(day.date + 'T00:00:00').getDay()
+    currentWeek.push(day)
+    if (dow === 6) { // Saturday is end of week
+      weeks.push(currentWeek)
+      currentWeek = []
+    }
+  }
+  if (currentWeek.length > 0) weeks.push(currentWeek)
+  return weeks
+})
+
+// 月份标签
+const monthLabels = computed(() => {
+  const labels = []
+  let lastMonth = -1
+  for (const day of calendarDays.value) {
+    if (day.month !== lastMonth && day.day <= 7) {
+      const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+      labels.push({ index: calendarDays.value.indexOf(day), label: monthNames[day.month] })
+      lastMonth = day.month
+    }
+  }
+  return labels
+})
+
+onMounted(async () => {
+  loading.value = true
+  await refreshData()
+  loading.value = false
+})
+
+async function refreshData() {
   stats.value = getOverallStats()
   dueReviews.value = getDueReviews()
   upcomingReviews.value = getUpcomingReviews(7)
   allProgress.value = getAllProgress()
   chapterProgressRecords.value = getAllChapterProgress()
   chapterDueReviews.value = getChaptersForReview()
+
+  // 加载增强数据
+  try {
+    enhancedStats.value = await getEnhancedOverallStats()
+    todayStats.value = await getTodayStats()
+    weeklyStats.value = await getWeeklyStats()
+    subjectDistribution.value = await getSubjectDistribution()
+    calendarData.value = await getCalendarHeatmapData(91)
+  } catch (e) {
+    console.warn('Failed to load enhanced stats:', e)
+  }
 }
 
 // Build chapter progress data from knowledgeMap
@@ -118,6 +213,11 @@ function getSubjectName(subject) {
   return s ? s.name : subject
 }
 
+function getSubjectColor(subject) {
+  const s = (knowledgeMap.subjects || []).find(s => s.id === subject)
+  return s ? s.color : '#888'
+}
+
 // Due review urgency
 function getUrgencyClass(record) {
   const now = Date.now()
@@ -144,7 +244,6 @@ const timelineDays = computed(() => {
   const now = new Date()
   now.setHours(0, 0, 0, 0)
 
-  // Today + 6 more days
   for (let i = 0; i < 7; i++) {
     const dayDate = new Date(now.getTime() + i * 24 * 60 * 60 * 1000)
     const dayStr = dayDate.toISOString().slice(0, 10)
@@ -155,7 +254,6 @@ const timelineDays = computed(() => {
       return reviewDate === dayStr
     })
 
-    // Also include due reviews for today
     let dueTodayRecords = []
     if (i === 0) {
       dueTodayRecords = dueReviews.value
@@ -185,10 +283,53 @@ function formatMinutes(mins) {
   return m > 0 ? `${h}小时${m}分钟` : `${h}小时`
 }
 
+function formatDuration(ms) {
+  const mins = Math.round(ms / 60000)
+  return formatMinutes(mins)
+}
+
 function handleReset() {
-  resetProgress()
+  resetAllData()
   refreshData()
   showResetConfirm.value = false
+}
+
+// 导出/导入
+async function handleExport() {
+  try {
+    await exportAllData()
+    showExportSuccess.value = true
+    setTimeout(() => { showExportSuccess.value = false }, 3000)
+  } catch (e) {
+    console.error('Export failed:', e)
+  }
+}
+
+function handleImportClick() {
+  importFileInput.value?.click()
+}
+
+function onFileSelected(event) {
+  const file = event.target.files?.[0]
+  if (file) {
+    importFile.value = file
+    showImportConfirm.value = true
+  }
+}
+
+async function confirmImport() {
+  if (!importFile.value) return
+  try {
+    const result = await importAllData(importFile.value)
+    showImportConfirm.value = false
+    importFile.value = null
+    await refreshData()
+    alert(`导入成功！\n知识点数: ${result.stats.points}\n会话数: ${result.stats.sessions}\n答题记录: ${result.stats.answers}`)
+  } catch (e) {
+    alert('导入失败: ' + e.message)
+    showImportConfirm.value = false
+    importFile.value = null
+  }
 }
 
 // Chapter review helpers
@@ -226,202 +367,356 @@ function getChapterUrgencyClass(chapter) {
     <div class="wrap progress-header">
       <button class="btn btn-outline" @click="router.push('/')">← 返回首页</button>
       <h1 class="page-title">📊 学习进度</h1>
-      <p class="page-subtitle">记录你的学习旅程，科学间隔复习</p>
+      <p class="page-subtitle">真实记录你的每一次学习，科学追踪成长轨迹</p>
     </div>
 
-    <!-- Dashboard Stats -->
-    <div class="wrap">
-      <span class="section-badge badge-coral">📊 数据总览</span>
-      <div class="stats-grid">
-        <!-- Total Learned -->
-        <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B6B20, #FF6B6B40); color: #FF6B6B;">📚</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.totalLearned }}</div>
-            <div class="stat-label">已学知识点</div>
-          </div>
-        </div>
+    <!-- Loading -->
+    <div v-if="loading" class="wrap" style="text-align:center;padding:80px 0;">
+      <div class="loading-spinner"></div>
+      <p style="color:var(--text3);margin-top:16px;">正在加载学习数据...</p>
+    </div>
 
-        <!-- Average Mastery - Circular -->
-        <div class="stat-card card">
-          <div class="mastery-ring-container">
-            <svg class="mastery-ring" viewBox="0 0 100 100">
-              <circle class="mastery-ring-bg" cx="50" cy="50" r="42" />
-              <circle class="mastery-ring-fill" cx="50" cy="50" r="42"
-                :stroke-dasharray="2 * Math.PI * 42"
-                :stroke-dashoffset="2 * Math.PI * 42 * (1 - stats.avgMastery / 100)" />
-            </svg>
-            <div class="mastery-ring-text">{{ stats.avgMastery }}%</div>
+    <template v-if="!loading">
+      <!-- ===== 今日学习概况 ===== -->
+      <div class="wrap">
+        <span class="section-badge badge-coral">⚡ 今日学习</span>
+        <div class="today-grid">
+          <div class="today-stat card">
+            <div class="today-stat-icon" style="background:linear-gradient(135deg,#667eea20,#667eea40);color:#667eea;">⏱️</div>
+            <div class="today-stat-value">{{ formatMinutes(todayStats.minutes) }}</div>
+            <div class="today-stat-label">学习时长</div>
           </div>
-          <div class="stat-info">
-            <div class="stat-label">平均掌握度</div>
+          <div class="today-stat card">
+            <div class="today-stat-icon" style="background:linear-gradient(135deg,#34D39920,#34D39940);color:#34D399;">📖</div>
+            <div class="today-stat-value">{{ todayStats.episodes }}</div>
+            <div class="today-stat-label">故事剧集</div>
           </div>
-        </div>
-
-        <!-- Learning Streak -->
-        <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #FF8C4220, #FF8C4240); color: #FF8C42;">🔥</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ stats.streak }}<span class="stat-unit">天</span></div>
-            <div class="stat-label">连续学习</div>
+          <div class="today-stat card">
+            <div class="today-stat-icon" style="background:linear-gradient(135deg,#FF8C4220,#FF8C4240);color:#FF8C42;">❓</div>
+            <div class="today-stat-value">{{ todayStats.answers }}</div>
+            <div class="today-stat-label">答题数量</div>
           </div>
-        </div>
-
-        <!-- Study Time -->
-        <div class="stat-card card">
-          <div class="stat-icon" style="background: linear-gradient(135deg, #34D39920, #34D39940); color: #34D399;">⏱️</div>
-          <div class="stat-info">
-            <div class="stat-value">{{ formatMinutes(stats.estimatedMinutes) }}</div>
-            <div class="stat-label">预估学习时间</div>
+          <div class="today-stat card">
+            <div class="today-stat-icon" style="background:linear-gradient(135deg,#C084FC20,#C084FC40);color:#C084FC;">🎯</div>
+            <div class="today-stat-value">{{ todayStats.accuracy }}%</div>
+            <div class="today-stat-label">答题准确率</div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Due Reviews Section -->
-    <div class="wrap" style="margin-top: 32px;">
-      <span class="section-badge badge-orange">🔄 待复习</span>
-      <div v-if="dueReviews.length === 0" class="empty-state card">
-        <div class="empty-icon">🎉</div>
-        <div class="empty-text">暂无待复习的知识点</div>
-        <div class="empty-sub">继续学习新故事，复习任务会自动安排</div>
-      </div>
-      <div v-else class="due-list">
-        <div v-for="record in dueReviews" :key="record.pointId" class="due-card card" :class="getUrgencyClass(record)">
-          <div class="due-card-header">
-            <span class="due-point-icon">{{ getSubjectIcon(record.subject) }}</span>
-            <div class="due-point-info">
-              <div class="due-point-name">{{ getPointName(record.pointId) }}</div>
-              <div class="due-point-meta">
-                {{ getSubjectName(record.subject) }} · 上次复习: {{ formatTime(record.lastReviewed) }}
-              </div>
+      <!-- ===== Dashboard Stats ===== -->
+      <div class="wrap" style="margin-top:32px;">
+        <span class="section-badge badge-coral">📊 数据总览</span>
+        <div class="stats-grid">
+          <!-- Total Learned -->
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #FF6B6B20, #FF6B6B40); color: #FF6B6B;">📚</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ enhancedStats?.totalLearned || stats.totalLearned }}</div>
+              <div class="stat-label">已学知识点</div>
             </div>
-            <span class="due-urgency-tag" :class="getUrgencyClass(record)">{{ getUrgencyLabel(record) }}</span>
           </div>
-          <div class="due-card-footer">
-            <div class="mastery-bar-container">
-              <div class="mastery-bar">
-                <div class="mastery-bar-fill" :style="{ width: record.masteryLevel + '%', background: record.masteryLevel >= 70 ? '#34D399' : record.masteryLevel >= 40 ? '#FF8C42' : '#FF6B6B' }"></div>
-              </div>
-              <span class="mastery-bar-label">{{ record.masteryLevel }}%</span>
+
+          <!-- Average Mastery - Circular -->
+          <div class="stat-card card">
+            <div class="mastery-ring-container">
+              <svg class="mastery-ring" viewBox="0 0 100 100">
+                <circle class="mastery-ring-bg" cx="50" cy="50" r="42" />
+                <circle class="mastery-ring-fill" cx="50" cy="50" r="42"
+                  :stroke-dasharray="2 * Math.PI * 42"
+                  :stroke-dashoffset="2 * Math.PI * 42 * (1 - (enhancedStats?.avgMastery || stats.avgMastery) / 100)" />
+              </svg>
+              <div class="mastery-ring-text">{{ enhancedStats?.avgMastery || stats.avgMastery }}%</div>
+            </div>
+            <div class="stat-info">
+              <div class="stat-label">平均掌握度</div>
+            </div>
+          </div>
+
+          <!-- Learning Streak -->
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #FF8C4220, #FF8C4240); color: #FF8C42;">🔥</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ enhancedStats?.streak || stats.streak }}<span class="stat-unit">天</span></div>
+              <div class="stat-label">连续学习</div>
+            </div>
+          </div>
+
+          <!-- 本周活跃 -->
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #34D39920, #34D39940); color: #34D399;">📅</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ weeklyStats.activeDays }}<span class="stat-unit">/7天</span></div>
+              <div class="stat-label">本周活跃</div>
+            </div>
+          </div>
+
+          <!-- 真实学习时间 -->
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #60A5FA20, #60A5FA40); color: #60A5FA;">⏱️</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ formatMinutes(enhancedStats?.realMinutes || stats.estimatedMinutes) }}</div>
+              <div class="stat-label">累计学习时长</div>
+            </div>
+          </div>
+
+          <!-- 本周答题 -->
+          <div class="stat-card card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #F59E0B20, #F59E0B40); color: #F59E0B;">🎯</div>
+            <div class="stat-info">
+              <div class="stat-value">{{ enhancedStats?.realAccuracy || stats.accuracy }}%</div>
+              <div class="stat-label">综合准确率</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Chapter Review Schedule (Spaced Repetition) -->
-    <div class="wrap" style="margin-top: 32px;" v-if="chapterProgressRecords.length > 0">
-      <span class="section-badge badge-mint">🧠 章节复习计划</span>
-      <p style="font-size: 13px; color: var(--text3); margin: 8px 0 12px;">基于艾宾浩斯遗忘曲线：1天 → 2天 → 4天 → 7天 → 15天 → 1月 → 3月 → 6月</p>
-      <div class="chapter-review-list">
-        <div v-for="ch in chapterProgressRecords" :key="ch.chapterId" class="chapter-review-card card"
-          :class="{ 'chapter-due': ch.nextReview && ch.nextReview <= Date.now() }">
-          <div class="chapter-review-header">
-            <span class="chapter-review-icon">{{ getChapterSubjectIcon(ch) }}</span>
-            <div class="chapter-review-info">
-              <div class="chapter-review-title">{{ ch.title }}</div>
-              <div class="chapter-review-meta">
-                {{ getChapterSubjectName(ch) }} · 已完成 {{ ch.completionCount }} 次
+      <!-- ===== 学习日历热力图 ===== -->
+      <div class="wrap" style="margin-top:32px;">
+        <span class="section-badge badge-green">📅 学习日历</span>
+        <p style="font-size:13px;color:var(--text3);margin:8px 0 12px;">近3个月每日学习时长分布</p>
+        <div class="calendar-heatmap card">
+          <div class="heatmap-header">
+            <div class="heatmap-months">
+              <span v-for="ml in monthLabels" :key="ml.label" class="heatmap-month-label"
+                :style="{ marginLeft: ml.index * 14 + 'px' }">{{ ml.label }}</span>
+            </div>
+          </div>
+          <div class="heatmap-body">
+            <div class="heatmap-weekdays">
+              <span>一</span><span>三</span><span>五</span>
+            </div>
+            <div class="heatmap-grid">
+              <template v-for="week in calendarWeeks" :key="week[0]?.date">
+                <div v-for="day in week" :key="day.date" class="heatmap-cell"
+                  :class="'level-' + day.level + (day.isToday ? ' is-today' : '')"
+                  :title="day.date + ': ' + (day.minutes > 0 ? day.minutes + '分钟' : '无学习记录')">
+                </div>
+              </template>
+            </div>
+          </div>
+          <div class="heatmap-legend">
+            <span class="legend-label">少</span>
+            <span class="legend-cell level-0"></span>
+            <span class="legend-cell level-1"></span>
+            <span class="legend-cell level-2"></span>
+            <span class="legend-cell level-3"></span>
+            <span class="legend-cell level-4"></span>
+            <span class="legend-label">多</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 学科分布 ===== -->
+      <div class="wrap" style="margin-top:32px;" v-if="subjectDistribution.length > 0">
+        <span class="section-badge badge-blue">📚 学科分布</span>
+        <p style="font-size:13px;color:var(--text3);margin:8px 0 12px;">各学科学习时长与答题表现</p>
+        <div class="subject-grid">
+          <div v-for="subj in subjectDistribution" :key="subj.subject" class="subject-card card">
+            <div class="subject-card-header">
+              <span class="subject-icon">{{ getSubjectIcon(subj.subject) }}</span>
+              <span class="subject-name">{{ getSubjectName(subj.subject) }}</span>
+            </div>
+            <div class="subject-stats">
+              <div class="subject-stat">
+                <span class="subject-stat-value">{{ formatMinutes(subj.minutes) }}</span>
+                <span class="subject-stat-label">学习时长</span>
+              </div>
+              <div class="subject-stat">
+                <span class="subject-stat-value">{{ subj.answers }}</span>
+                <span class="subject-stat-label">答题</span>
+              </div>
+              <div class="subject-stat">
+                <span class="subject-stat-value" :class="{ 'stat-good': subj.accuracy >= 70, 'stat-ok': subj.accuracy >= 40 && subj.accuracy < 70, 'stat-poor': subj.accuracy < 40 }">{{ subj.accuracy }}%</span>
+                <span class="subject-stat-label">准确率</span>
               </div>
             </div>
-            <div class="chapter-review-stage">
-              <span class="stage-badge" :class="{ 'stage-due': ch.nextReview && ch.nextReview <= Date.now() }">
-                {{ getReviewStageName(ch.reviewStage) }}
+            <div class="subject-bar">
+              <div class="subject-bar-fill" :style="{
+                width: Math.min(100, subj.minutes / Math.max(...subjectDistribution.map(s => s.minutes)) * 100) + '%',
+                background: getSubjectColor(subj.subject)
+              }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Due Reviews Section ===== -->
+      <div class="wrap" style="margin-top:32px;">
+        <span class="section-badge badge-orange">🔄 待复习</span>
+        <div v-if="dueReviews.length === 0" class="empty-state card">
+          <div class="empty-icon">🎉</div>
+          <div class="empty-text">暂无待复习的知识点</div>
+          <div class="empty-sub">继续学习新故事，复习任务会自动安排</div>
+        </div>
+        <div v-else class="due-list">
+          <div v-for="record in dueReviews" :key="record.pointId" class="due-card card" :class="getUrgencyClass(record)">
+            <div class="due-card-header">
+              <span class="due-point-icon">{{ getSubjectIcon(record.subject) }}</span>
+              <div class="due-point-info">
+                <div class="due-point-name">{{ getPointName(record.pointId) }}</div>
+                <div class="due-point-meta">
+                  {{ getSubjectName(record.subject) }} · 上次复习: {{ formatTime(record.lastReviewed) }}
+                </div>
+              </div>
+              <span class="due-urgency-tag" :class="getUrgencyClass(record)">{{ getUrgencyLabel(record) }}</span>
+            </div>
+            <div class="due-card-footer">
+              <div class="mastery-bar-container">
+                <div class="mastery-bar">
+                  <div class="mastery-bar-fill" :style="{ width: record.masteryLevel + '%', background: record.masteryLevel >= 70 ? '#34D399' : record.masteryLevel >= 40 ? '#FF8C42' : '#FF6B6B' }"></div>
+                </div>
+                <span class="mastery-bar-label">{{ record.masteryLevel }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Chapter Review Schedule ===== -->
+      <div class="wrap" style="margin-top:32px;" v-if="chapterProgressRecords.length > 0">
+        <span class="section-badge badge-mint">🧠 章节复习计划</span>
+        <p style="font-size:13px;color:var(--text3);margin:8px 0 12px;">基于艾宾浩斯遗忘曲线：1天 → 2天 → 4天 → 7天 → 15天 → 1月 → 3月 → 6月</p>
+        <div class="chapter-review-list">
+          <div v-for="ch in chapterProgressRecords" :key="ch.chapterId" class="chapter-review-card card"
+            :class="{ 'chapter-due': ch.nextReview && ch.nextReview <= Date.now() }">
+            <div class="chapter-review-header">
+              <span class="chapter-review-icon">{{ getChapterSubjectIcon(ch) }}</span>
+              <div class="chapter-review-info">
+                <div class="chapter-review-title">{{ ch.title }} <span class="semester-badge-review">{{ getChapterSemester(ch.subject, ch.chapterId, ch.grade) }}</span></div>
+                <div class="chapter-review-meta">
+                  {{ getChapterSubjectName(ch) }} · 已完成 {{ ch.completionCount }} 次
+                </div>
+              </div>
+              <div class="chapter-review-stage">
+                <span class="stage-badge" :class="{ 'stage-due': ch.nextReview && ch.nextReview <= Date.now() }">
+                  {{ getReviewStageName(ch.reviewStage) }}
+                </span>
+              </div>
+            </div>
+            <div class="chapter-review-timeline">
+              <div v-for="(interval, idx) in [1,2,4,7,15,30,90,180]" :key="idx"
+                class="timeline-dot-item"
+                :class="{
+                  'dot-completed': idx < ch.reviewStage,
+                  'dot-current': idx === ch.reviewStage,
+                  'dot-future': idx > ch.reviewStage
+                }">
+                <span class="dot-label">{{ idx < 5 ? interval + '天' : idx === 5 ? '1月' : idx === 6 ? '3月' : '6月' }}</span>
+              </div>
+            </div>
+            <div class="chapter-review-footer" v-if="ch.nextReview">
+              <span v-if="ch.nextReview <= Date.now()" style="color: var(--coral); font-weight: 600; font-size: 13px;">
+                ⏰ 现在可以复习！
+              </span>
+              <span v-else style="color: var(--text3); font-size: 13px;">
+                下次复习：{{ formatReviewTime(ch.nextReview) }}
               </span>
             </div>
           </div>
-          <div class="chapter-review-timeline">
-            <div v-for="(interval, idx) in [1,2,4,7,15,30,90,180]" :key="idx"
-              class="timeline-dot-item"
-              :class="{
-                'dot-completed': idx < ch.reviewStage,
-                'dot-current': idx === ch.reviewStage,
-                'dot-future': idx > ch.reviewStage
-              }">
-              <span class="dot-label">{{ idx < 5 ? interval + '天' : idx === 5 ? '1月' : idx === 6 ? '3月' : '6月' }}</span>
-            </div>
-          </div>
-          <div class="chapter-review-footer" v-if="ch.nextReview">
-            <span v-if="ch.nextReview <= Date.now()" style="color: var(--coral); font-weight: 600; font-size: 13px;">
-              ⏰ 现在可以复习！
-            </span>
-            <span v-else style="color: var(--text3); font-size: 13px;">
-              下次复习：{{ formatReviewTime(ch.nextReview) }}
-            </span>
-          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Review Timeline -->
-    <div class="wrap" style="margin-top: 32px;">
-      <span class="section-badge badge-purple">📅 复习时间线</span>
-      <div class="timeline">
-        <div v-for="day in timelineDays" :key="day.date" class="timeline-day" :class="{ 'timeline-today': day.isToday, 'timeline-empty': day.count === 0 }">
-          <div class="timeline-marker">
-            <div class="timeline-dot" :class="{ 'dot-active': day.count > 0, 'dot-today': day.isToday }"></div>
-            <div v-if="day.isToday" class="timeline-today-badge">Today</div>
-          </div>
-          <div class="timeline-content">
-            <div class="timeline-date">{{ day.label }}</div>
-            <div v-if="day.count === 0" class="timeline-empty-text">暂无安排</div>
-            <div v-else class="timeline-points">
-              <span v-for="rec in day.records" :key="rec.pointId" class="timeline-point-tag">
-                {{ getSubjectIcon(rec.subject) }} {{ getPointName(rec.pointId) }}
-              </span>
-              <span class="timeline-count-badge">{{ day.count }}个</span>
+      <!-- ===== Review Timeline ===== -->
+      <div class="wrap" style="margin-top:32px;">
+        <span class="section-badge badge-purple">📅 复习时间线</span>
+        <div class="timeline">
+          <div v-for="day in timelineDays" :key="day.date" class="timeline-day" :class="{ 'timeline-today': day.isToday, 'timeline-empty': day.count === 0 }">
+            <div class="timeline-marker">
+              <div class="timeline-dot" :class="{ 'dot-active': day.count > 0, 'dot-today': day.isToday }"></div>
+              <div v-if="day.isToday" class="timeline-today-badge">Today</div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">{{ day.label }}</div>
+              <div v-if="day.count === 0" class="timeline-empty-text">暂无安排</div>
+              <div v-else class="timeline-points">
+                <span v-for="rec in day.records" :key="rec.pointId" class="timeline-point-tag">
+                  {{ getSubjectIcon(rec.subject) }} {{ getPointName(rec.pointId) }}
+                </span>
+                <span class="timeline-count-badge">{{ day.count }}个</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Chapter Progress -->
-    <div class="wrap" style="margin-top: 32px; padding-bottom: 80px;">
-      <span class="section-badge badge-blue">📖 章节进度</span>
-      <div v-if="chapterProgressData.length === 0" class="empty-state card">
-        <div class="empty-icon">📖</div>
-        <div class="empty-text">开始学习后，章节进度将在此显示</div>
-      </div>
-      <div v-else class="chapter-grid">
-        <div v-for="ch in chapterProgressData" :key="ch.chapterId" class="chapter-card card">
-          <div class="chapter-header">
-            <span class="chapter-icon">{{ ch.icon }}</span>
-            <div class="chapter-title-group">
-              <div class="chapter-title">{{ ch.title }}</div>
-              <div class="chapter-meta">{{ ch.subjectName }} · {{ ch.gradeName }}</div>
+      <!-- ===== Chapter Progress ===== -->
+      <div class="wrap" style="margin-top:32px;">
+        <span class="section-badge badge-blue">📖 章节进度</span>
+        <div v-if="chapterProgressData.length === 0" class="empty-state card">
+          <div class="empty-icon">📖</div>
+          <div class="empty-text">开始学习后，章节进度将在此显示</div>
+        </div>
+        <div v-else class="chapter-grid">
+          <div v-for="ch in chapterProgressData" :key="ch.chapterId" class="chapter-card card">
+            <div class="chapter-header">
+              <span class="chapter-icon">{{ ch.icon }}</span>
+              <div class="chapter-title-group">
+                <div class="chapter-title">{{ ch.title }}</div>
+                <div class="chapter-meta">{{ ch.subjectName }} · {{ ch.gradeName }}</div>
+              </div>
+              <div class="chapter-mastery-badge" :class="{ masteryHigh: ch.avgMastery >= 70, masteryMid: ch.avgMastery >= 40 && ch.avgMastery < 70, masteryLow: ch.avgMastery < 40 }">
+                {{ ch.avgMastery }}%
+              </div>
             </div>
-            <div class="chapter-mastery-badge" :class="{ masteryHigh: ch.avgMastery >= 70, masteryMid: ch.avgMastery >= 40 && ch.avgMastery < 70, masteryLow: ch.avgMastery < 40 }">
-              {{ ch.avgMastery }}%
+            <div class="chapter-progress-bar">
+              <div class="chapter-progress-fill" :style="{ width: (ch.learnedPoints / ch.totalPoints * 100) + '%' }"></div>
             </div>
-          </div>
-          <div class="chapter-progress-bar">
-            <div class="chapter-progress-fill" :style="{ width: (ch.learnedPoints / ch.totalPoints * 100) + '%' }"></div>
-          </div>
-          <div class="chapter-footer">
-            <span class="chapter-count">已学 {{ ch.learnedPoints }}/{{ ch.totalPoints }} 个知识点</span>
+            <div class="chapter-footer">
+              <span class="chapter-count">已学 {{ ch.learnedPoints }}/{{ ch.totalPoints }} 个知识点</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Reset Button -->
-    <div class="wrap" style="padding-bottom: 40px;">
-      <div class="reset-section">
-        <button class="btn btn-outline reset-btn" @click="showResetConfirm = true">🗑️ 重置所有进度</button>
+      <!-- ===== 数据管理与导出 ===== -->
+      <div class="wrap" style="margin-top:32px;padding-bottom:40px;">
+        <span class="section-badge badge-gray">💾 数据管理</span>
+        <div class="data-actions card">
+          <p style="font-size:13px;color:var(--text3);margin-bottom:16px;line-height:1.6;">
+            你的所有学习数据均存储在浏览器本地。建议定期导出备份，以防数据丢失。
+          </p>
+          <div class="data-button-group">
+            <button class="btn btn-primary" @click="handleExport" style="background:linear-gradient(135deg,#667eea,#764ba2);">
+              📤 导出数据
+            </button>
+            <button class="btn btn-outline" @click="handleImportClick">
+              📥 导入数据
+            </button>
+            <button class="btn btn-outline reset-btn" @click="showResetConfirm = true">
+              🗑️ 重置所有数据
+            </button>
+          </div>
+          <input ref="importFileInput" type="file" accept=".json" style="display:none" @change="onFileSelected" />
+          <div v-if="showExportSuccess" class="export-success">
+            ✅ 数据导出成功！
+          </div>
+        </div>
       </div>
-    </div>
+    </template>
 
     <!-- Reset Confirm Dialog -->
     <div v-if="showResetConfirm" class="dialog-overlay" @click.self="showResetConfirm = false">
       <div class="dialog card">
         <div class="dialog-icon">⚠️</div>
         <h3 class="dialog-title">确认重置？</h3>
-        <p class="dialog-text">这将清除所有学习进度记录，此操作不可撤销。</p>
+        <p class="dialog-text">这将清除所有学习进度记录（包括浏览器数据库），此操作不可撤销。</p>
         <div class="dialog-actions">
           <button class="btn btn-outline" @click="showResetConfirm = false">取消</button>
           <button class="btn btn-coral" @click="handleReset" style="background: linear-gradient(135deg, #FF6B6B, #FF4757);">确认重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import Confirm Dialog -->
+    <div v-if="showImportConfirm" class="dialog-overlay" @click.self="showImportConfirm = false">
+      <div class="dialog card">
+        <div class="dialog-icon">📥</div>
+        <h3 class="dialog-title">确认导入数据？</h3>
+        <p class="dialog-text">导入将替换当前所有学习进度数据，请谨慎操作。</p>
+        <div class="dialog-actions">
+          <button class="btn btn-outline" @click="showImportConfirm = false; importFile = null">取消</button>
+          <button class="btn btn-primary" @click="confirmImport" style="background:linear-gradient(135deg,#667eea,#764ba2);">确认导入</button>
         </div>
       </div>
     </div>
@@ -458,6 +753,53 @@ function getChapterUrgencyClass(chapter) {
   font-size: 15px;
   color: var(--text3);
   font-weight: 400;
+}
+
+/* Loading */
+.loading-spinner {
+  width: 40px; height: 40px;
+  border: 4px solid #F0E8F8;
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Today Stats */
+.today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.today-stat {
+  text-align: center;
+  padding: 20px 16px;
+  cursor: default;
+}
+.today-stat:hover {
+  transform: translateY(-3px);
+}
+.today-stat-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  margin: 0 auto 10px;
+}
+.today-stat-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+}
+.today-stat-label {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 /* Stats Grid */
@@ -757,7 +1099,6 @@ function getChapterUrgencyClass(chapter) {
   border-radius: 10px;
 }
 
-/* Chapter Progress */
 /* Chapter Review Schedule */
 .chapter-review-list {
   display: flex; flex-direction: column; gap: 14px; margin-top: 12px;
@@ -774,7 +1115,13 @@ function getChapterUrgencyClass(chapter) {
 }
 .chapter-review-icon { font-size: 28px; flex-shrink: 0; }
 .chapter-review-info { flex: 1; min-width: 0; }
-.chapter-review-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.chapter-review-title { font-size: 14px; font-weight: 600; color: var(--text1); }
+.semester-badge-review {
+  font-size: 10px; font-weight: 500;
+  color: white; background: var(--coral);
+  padding: 1px 6px; border-radius: 6px;
+  margin-left: 6px; vertical-align: middle;
+}
 .chapter-review-meta { font-size: 12px; color: var(--text3); margin-top: 2px; }
 .chapter-review-stage { flex-shrink: 0; }
 .stage-badge {
@@ -881,15 +1228,174 @@ function getChapterUrgencyClass(chapter) {
   color: var(--text3);
 }
 
-/* Reset */
-.reset-section {
-  text-align: center;
-  padding-top: 20px;
-  border-top: 1px solid #F0E8F8;
+/* ===== Calendar Heatmap ===== */
+.calendar-heatmap {
+  padding: 24px;
+  cursor: default;
 }
-.reset-btn {
+.calendar-heatmap:hover { transform: none; }
+.heatmap-header {
+  margin-bottom: 12px;
+}
+.heatmap-months {
+  display: flex;
+  gap: 0;
+  padding-left: 32px;
+}
+.heatmap-month-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+}
+.heatmap-body {
+  display: flex;
+  gap: 8px;
+}
+.heatmap-weekdays {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 0;
+}
+.heatmap-weekdays span {
+  font-size: 10px;
+  color: var(--text3);
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+}
+.heatmap-grid {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: #F5F0FA;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.heatmap-cell:hover {
+  transform: scale(1.3);
+  z-index: 2;
+}
+.heatmap-cell.level-0 { background: #F5F0FA; }
+.heatmap-cell.level-1 { background: #D8C8F0; }
+.heatmap-cell.level-2 { background: #B894E8; }
+.heatmap-cell.level-3 { background: #9C6ADE; }
+.heatmap-cell.level-4 { background: #7C3AED; }
+.heatmap-cell.is-today {
+  border: 2px solid var(--coral);
+  box-shadow: 0 0 0 1px var(--coral);
+}
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.legend-label {
+  font-size: 10px;
+  color: var(--text3);
+}
+.legend-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+.legend-cell.level-0 { background: #F5F0FA; }
+.legend-cell.level-1 { background: #D8C8F0; }
+.legend-cell.level-2 { background: #B894E8; }
+.legend-cell.level-3 { background: #9C6ADE; }
+.legend-cell.level-4 { background: #7C3AED; }
+
+/* ===== Subject Distribution ===== */
+.subject-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.subject-card {
+  padding: 20px;
+  cursor: default;
+}
+.subject-card:hover { transform: translateY(-3px); }
+.subject-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.subject-icon { font-size: 24px; }
+.subject-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.subject-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.subject-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.subject-stat-value {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+}
+.subject-stat-value.stat-good { color: #059669; }
+.subject-stat-value.stat-ok { color: #D97706; }
+.subject-stat-value.stat-poor { color: #DC2626; }
+.subject-stat-label {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 500;
+}
+.subject-bar {
+  height: 6px;
+  background: #F0E8F8;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.subject-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Data Management */
+.data-actions {
+  padding: 24px;
+  margin-top: 12px;
+}
+.data-actions:hover { transform: none; }
+.data-button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.data-button-group .btn {
   font-size: 13px;
   padding: 10px 20px;
+}
+.reset-btn {
+  color: var(--coral);
+  border-color: rgba(255, 107, 107, 0.3);
+}
+.reset-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+.export-success {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #059669;
+  animation: fadeIn 0.3s ease;
 }
 
 /* Dialog */
@@ -948,5 +1454,14 @@ function getChapterUrgencyClass(chapter) {
   .chapter-review-timeline { gap: 2px; }
   .timeline-dot-item { padding: 4px 6px; }
   .timeline { padding-left: 8px; }
+  .today-grid { grid-template-columns: repeat(2, 1fr); }
+  .subject-grid { grid-template-columns: 1fr; }
+  .heatmap-cell { width: 12px; height: 12px; }
+  .data-button-group { flex-direction: column; }
+}
+
+@keyframes reviewPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 </style>
