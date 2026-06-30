@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { knowledgeMap } from '../data/knowledgeMap'
+import { THEMES } from '../data/themes'
 import { getAllChapterProgress, getChaptersForReview } from '../utils/learningProgress'
 import { hasCharacter, getCharacter, getCultivationInfo, getCharacterTalents, getPersonality } from '../utils/characterSystem'
 
@@ -17,22 +18,37 @@ const hasChar = computed(() => hasCharacter())
 const step = ref('grade')
 const selectedGrade = ref(null)
 const selectedSubject = ref(null)
+const selectedTheme = ref(null)
 
 const currentGrade = computed(() => knowledgeMap.grades.find(g => g.id === selectedGrade.value))
+
+const currentSubject = computed(() => knowledgeMap.subjects.find(s => s.id === selectedSubject.value))
+
+const gradeChapters = computed(() => {
+  if (!selectedSubject.value || !selectedGrade.value) return []
+  const subjectData = knowledgeMap[selectedSubject.value]
+  if (!subjectData) return []
+  const gradeData = subjectData[selectedGrade.value]
+  if (!gradeData?.chapters) return []
+  return gradeData.chapters
+})
 
 function selectGrade(grade) { selectedGrade.value = grade.id; step.value = 'subject' }
 function selectSubject(id) {
   selectedSubject.value = id
-  const subjectData = knowledgeMap[id]
-  if (!subjectData) return
-  const gradeData = subjectData[selectedGrade.value]
-  if (!gradeData || !gradeData.chapters?.length) return
-  const firstChapter = gradeData.chapters[0]
-  router.push(`/play/${selectedGrade.value}/${id}/martial/persistent?chapter=${firstChapter.id}`)
+  step.value = 'theme'
+}
+function selectTheme(theme) {
+  selectedTheme.value = theme.id
+  step.value = 'chapter'
+}
+function selectChapter(chapter) {
+  router.push(`/play/${selectedGrade.value}/${selectedSubject.value}/${selectedTheme.value}/persistent?chapter=${chapter.id}`)
 }
 function goBack() {
-  step.value = 'grade'
-  selectedGrade.value = null
+  if (step.value === 'subject') { step.value = 'grade'; selectedGrade.value = null; selectedSubject.value = null; selectedTheme.value = null }
+  else if (step.value === 'theme') { step.value = 'subject'; selectedSubject.value = null; selectedTheme.value = null }
+  else if (step.value === 'chapter') { step.value = 'theme'; selectedTheme.value = null }
 }
 
 // Continue Adventure — read last progress from localStorage
@@ -173,8 +189,16 @@ function goToRecommendation() {
           <span class="step-dot">1</span><span>选年级</span>
         </div>
         <div class="step-line" :class="{ done: step !== 'grade' }"></div>
-        <div class="step-item" :class="{ active: step === 'subject' }">
+        <div class="step-item" :class="{ active: step === 'subject', done: ['theme','chapter'].includes(step) }">
           <span class="step-dot">2</span><span>选学科</span>
+        </div>
+        <div class="step-line" :class="{ done: ['theme','chapter'].includes(step) }"></div>
+        <div class="step-item" :class="{ active: step === 'theme', done: step === 'chapter' }">
+          <span class="step-dot">3</span><span>选风格</span>
+        </div>
+        <div class="step-line" :class="{ done: step === 'chapter' }"></div>
+        <div class="step-item" :class="{ active: step === 'chapter' }">
+          <span class="step-dot">4</span><span>选章节</span>
         </div>
       </div>
     </div>
@@ -205,6 +229,49 @@ function goToRecommendation() {
           <div v-for="subject in knowledgeMap.subjects" :key="subject.id" class="subject-card" :style="{ borderColor: subject.color + '40' }" @click="selectSubject(subject.id)">
             <span class="subject-icon">{{ subject.icon }}</span>
             <span class="subject-name">{{ subject.name }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Theme Selection -->
+    <section v-if="step === 'theme'" class="section">
+      <div class="wrap">
+        <button class="btn btn-outline" @click="goBack">← 返回</button>
+        <div style="height: 16px"></div>
+        <div class="section-badge badge-purple">🎭 第三步</div>
+        <h2>{{ currentGrade?.name }} {{ currentSubject?.name }} - 选择冒险风格</h2>
+        <div class="theme-list">
+          <div v-for="theme in THEMES" :key="theme.id" class="theme-card" :style="{ borderColor: theme.color + '40' }" @click="selectTheme(theme)">
+            <div class="theme-icon-wrap" :style="{ background: theme.color + '20' }">
+              <span class="theme-icon">{{ theme.icon }}</span>
+            </div>
+            <div class="theme-info">
+              <span class="theme-name">{{ theme.name }}</span>
+              <span class="theme-desc">{{ theme.desc }}</span>
+            </div>
+            <span class="theme-arrow">→</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chapter Selection -->
+    <section v-if="step === 'chapter'" class="section">
+      <div class="wrap">
+        <button class="btn btn-outline" @click="goBack">← 返回</button>
+        <div style="height: 16px"></div>
+        <div class="section-badge badge-coral">📚 第四步</div>
+        <h2>{{ currentGrade?.name }} {{ currentSubject?.name }} - {{ THEMES.find(t => t.id === selectedTheme)?.name }}</h2>
+        <p class="chapter-hint">选择一个章节开始你的{{ THEMES.find(t => t.id === selectedTheme)?.name }}冒险</p>
+        <div class="chapter-list">
+          <div v-for="chapter in gradeChapters" :key="chapter.id" class="chapter-card" @click="selectChapter(chapter)">
+            <div class="chapter-num">{{ chapter.id?.split('-').pop() || '?' }}</div>
+            <div class="chapter-info">
+              <span class="chapter-title">{{ chapter.title || chapter.name }}</span>
+              <span class="chapter-desc">{{ chapter.description || chapter.desc || '' }}</span>
+            </div>
+            <span class="chapter-start">开始 →</span>
           </div>
         </div>
       </div>
@@ -403,6 +470,46 @@ function goToRecommendation() {
 .footer-character { font-size: 64px; margin-bottom: 16px; animation: wave 2s ease-in-out infinite; display: inline-block; }
 .footer h3 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
 .footer p { color: var(--text3); font-size: 14px; }
+
+/* Theme List */
+.theme-list { display: flex; flex-direction: column; gap: 12px; max-width: 480px; margin: 0 auto; }
+.theme-card {
+  display: flex; align-items: center; gap: 16px; padding: 18px 24px;
+  background: var(--bg-card); border-radius: var(--radius); cursor: pointer;
+  box-shadow: var(--shadow); border: 2px solid transparent;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.theme-card:hover { transform: translateY(-4px) rotate(0.5deg); box-shadow: var(--shadow-hover); }
+.theme-icon-wrap {
+  width: 52px; height: 52px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.theme-icon { font-size: 28px; }
+.theme-info { flex: 1; text-align: left; min-width: 0; }
+.theme-name { display: block; font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.theme-desc { display: block; font-size: 13px; color: var(--text3); }
+.theme-arrow { font-size: 18px; color: var(--text3); flex-shrink: 0; }
+
+/* Chapter List */
+.chapter-hint { color: var(--text3); font-size: 14px; margin-bottom: 16px; }
+.chapter-list { display: flex; flex-direction: column; gap: 10px; max-width: 560px; margin: 0 auto; }
+.chapter-card {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; background: var(--bg-card); border-radius: 14px;
+  cursor: pointer; box-shadow: var(--shadow);
+  border: 2px solid transparent; transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.chapter-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: var(--coral); }
+.chapter-num {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--coral), var(--pink));
+  color: #fff; font-weight: 900; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.chapter-info { flex: 1; text-align: left; min-width: 0; }
+.chapter-title { display: block; font-size: 14px; font-weight: 600; color: var(--text); }
+.chapter-desc { display: block; font-size: 12px; color: var(--text3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chapter-start { font-size: 13px; color: var(--coral); font-weight: 600; flex-shrink: 0; white-space: nowrap; }
 
 @media (max-width: 640px) {
   .hero-title { font-size: 32px; }
